@@ -1,0 +1,6 @@
+#%Module
+
+set PACKAGE_DIR [file dirname [file normalize ${ModulesCurrentModulefile}]]
+setenv HOUDINI_LMINFO_VERBOSE 1
+
+prepend-path HOUDINI_PATH ${PACKAGE_DIR}
