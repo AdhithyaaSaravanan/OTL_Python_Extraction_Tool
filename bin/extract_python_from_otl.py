@@ -1,4 +1,4 @@
-#! /usr/bin/env hython
+#! CM_NO_SGTK=1 /usr/bin/env hython
 
 import sys
 # import argparse
@@ -90,7 +90,7 @@ def extract(txt_file_path, file_paths):
                         older_time_data = json.load(file)
 
                     if get_last_modified_time(file_path) != older_time_data[otl_unique_name]:
-                        print(otl_unique_name + "was modified, currently updating it.\n\n")
+                        print(otl_unique_name + " was modified, updating it.\n\n")
                         shutil.rmtree(otl_folder_name)
                     else:
                         print("None of the OTLs were modified, proceeding as normal.\n\n")
@@ -139,6 +139,7 @@ def extract(txt_file_path, file_paths):
     j_time_dict = json.dumps(otl_last_mod_time_dict, indent=2)
     with open(scripts_folder_path + "last_modified_time.json", "w") as file:
         file.write(j_time_dict)
+
 
 def make_unique_name(var):
     """
@@ -219,14 +220,7 @@ def extract_py_and_write(definition, hda_folder_name):
 
             # check if file exists, if it does, don't update it
             if os.path.exists(script_file_path):
-                with open(script_file_path, 'r') as File:
-                    contents = File.read()
-                    if contents == py_script:
-                        continue
-                    else:
-                        with open(script_file_path, 'w') as file:
-                            file.write(py_script)
-
+                pass
             else:
                 with open(script_file_path, 'w') as file:
                     file.write(py_script)
@@ -243,7 +237,8 @@ def extract_py_and_write(definition, hda_folder_name):
         for p in pt:
 
             # check if a menu script exists, and it's in python
-            if isinstance(p, hou.StringParmTemplate) or isinstance(p, hou.MenuParmTemplate) or isinstance(p, hou.IntParmTemplate):
+            if isinstance(p, hou.StringParmTemplate) or isinstance(p, hou.MenuParmTemplate) or isinstance(p,
+                                                                                                          hou.IntParmTemplate):
                 if p.itemGeneratorScriptLanguage() == hou.scriptLanguage.Python:
                     menu_script = p.itemGeneratorScript()
                     file_name = p.name()
@@ -259,14 +254,7 @@ def extract_py_and_write(definition, hda_folder_name):
 
                     # check if file exists, if it does, don't update it
                     if os.path.exists(script_file_path):
-                        with open(script_file_path, 'r') as File:
-                            contents = File.read()
-                            if contents == menu_script:
-                                continue
-                            else:
-                                with open(script_file_path, 'w') as file:
-                                    file.write(menu_script)
-
+                        pass
                     else:
                         with open(script_file_path, 'w') as file:
                             file.write(menu_script)
@@ -287,24 +275,10 @@ def extract_py_and_write(definition, hda_folder_name):
 
                 # check if file exists, if it does, don't update it
                 if os.path.exists(script_file_path):
-                    with open(script_file_path, 'r') as File:
-                        contents = File.read()
-                        if contents == callback_py_script:
-                            continue
-                        else:
-                            with open(script_file_path, 'w') as file:
-                                file.write(callback_py_script)
-
+                    pass
                 else:
                     with open(script_file_path, 'w') as file:
                         file.write(callback_py_script)
-
-
-#
-# def delete(txt_file_path):
-#     # delete the OTL_python_scripts folder if it exists
-#     if os.path.exists(txt_file_path + "otl_python_scripts/"):
-#         shutil.rmtree(folder_path)
 
 
 if __name__ == '__main__':
