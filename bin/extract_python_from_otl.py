@@ -17,18 +17,18 @@ def main():
 
     # text file input
     parser.add_argument("-opl", "--otl_paths_list", type=str,
-                        help="Extracts Python scripts from the specified list of OTL pathways in a text file.")
+                        help="A text file with a list of otl pathways.")
 
     # otl input
     parser.add_argument("-otl", "--otlUpdate", type=str, nargs='*',
-                        help="Extracts Python scripts from the specified otl / otls.")
+                        help="Pathway to an otl.")
 
     # folder name input
-    parser.add_argument("-n", "--name", type=str, default="otl_scripts_folder", help="specify a name for the generated "
+    parser.add_argument("-n", "--name", type=str, default="otl_scripts_folder", help="A name for the generated "
                                                                                      "scripts folder.")
 
     # folder directory input
-    parser.add_argument("-d", "--directory", type=str, help="specify a directory for the generated scripts folder.")
+    parser.add_argument("-d", "--directory", type=str, help="A directory for the generated scripts folder.")
 
     # parse args
     args = parser.parse_args()
@@ -75,7 +75,6 @@ def main():
 
         print("\n\nGiven text file path:" + txt_file_path + "\n\n")
 
-        # extract(txt_file_path, otl_file_paths)
         extract(otl_file_paths, otls_folder_path, folder_name)
 
     if args.otlUpdate:
@@ -109,7 +108,7 @@ def extract(file_paths, otls_folder_path, name):
     otl_hash_dict = dict()
 
     # dict for storing and displaying the last modified time of the otls
-    otl_last_mod_time_dict = dict()
+    # otl_last_mod_time_dict = dict()
 
     # iterate through the file paths
     for file_path in file_paths:
@@ -133,14 +132,14 @@ def extract(file_paths, otls_folder_path, name):
                 # get the last modified time of the otl folders.
                 if scripts_folder_exists:
                     # print("scripts folder already exists\n\n")
-                    json_file_path = scripts_folder_path + "last_modified_time.json"
+                    json_file_path = scripts_folder_path + "log.json"
 
                     with open(json_file_path, "r") as file:
                         older_time_data = json.load(file)
 
                     # if any of the otls were modified, update the scripts inside them
                     # (delete the old one and generate a new one)
-                    if get_last_modified_time(file_path) != older_time_data[otl_unique_name]:
+                    if get_last_modified_time(file_path) != older_time_data[otl_unique_name][1]:
                         print(otl_unique_name + " was modified, updating it.\n\n")
                         shutil.rmtree(otl_folder_path)
                     else:
@@ -153,10 +152,10 @@ def extract(file_paths, otls_folder_path, name):
                     os.mkdir(otl_folder_path)
 
                 # append to the otl hash dictionary
-                otl_hash_dict[otl_unique_name] = file_path
+                otl_hash_dict[otl_unique_name] = file_path, "last_mod_time: " + get_last_modified_time(file_path)
 
                 # append to the otl last modified time dictionary
-                otl_last_mod_time_dict[otl_unique_name] = get_last_modified_time(file_path)
+                # otl_last_mod_time_dict[otl_unique_name] = get_last_modified_time(file_path)
 
                 # dict for storing and displaying the hda hash values
                 hda_hash_dict = dict()
@@ -183,17 +182,17 @@ def extract(file_paths, otls_folder_path, name):
                 with open(otl_folder_path + "log.json", "w") as file:
                     file.write(j_hda_hash_dict)
 
-    print("otl_python_scripts folder generated at:" + otls_folder_path + "\n\n")
+    print(name + " folder generated at:" + otls_folder_path + "\n\n")
 
     # write the otl hash dict to a json file
     j_otl_hash_dict = json.dumps(otl_hash_dict, indent=2)
     with open(scripts_folder_path + "log.json", "w") as file:
         file.write(j_otl_hash_dict)
-
-    # write the otl last modified time dict to a json file
-    j_time_dict = json.dumps(otl_last_mod_time_dict, indent=2)
-    with open(scripts_folder_path + "last_modified_time.json", "w") as file:
-        file.write(j_time_dict)
+    #
+    # # write the otl last modified time dict to a json file
+    # j_time_dict = json.dumps(otl_last_mod_time_dict, indent=2)
+    # with open(scripts_folder_path + "last_modified_time.json", "w") as file:
+    #     file.write(j_time_dict)
 
 
 def make_unique_name(var):
