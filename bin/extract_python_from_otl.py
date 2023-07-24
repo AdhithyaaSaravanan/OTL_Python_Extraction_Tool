@@ -1,9 +1,9 @@
-#! /usr/bin/env hython
+#!/usr/bin/env hython
 
 # CM_NO_SGTK=1
 
-import sys
-# import argparse
+# import sys
+import argparse
 import shutil
 import os
 import hashlib
@@ -12,52 +12,92 @@ import datetime as dt
 
 
 def main():
-    args = parse_args()
-    txt_file_path = args[0]
-    otl_file_paths = args[1]
 
-    if txt_file_path[-4:] != ".txt":
-        print("Given file is not a text file\n\n")
+    parser = argparse.ArgumentParser(description="extracts python scripts from a given list of otls")
 
-    print("Given text file path:" + txt_file_path + "\n\n")
+    # text file input
+    parser.add_argument("-opl", "--otl_paths_list", type=str,
+                        help="Extracts Python scripts from the specified list of OTL pathways in a text file.")
 
-    extract(txt_file_path, otl_file_paths)
+    # otl input
+    parser.add_argument("-otl", "--otlUpdate", type=str, nargs='*',
+                        help="Extracts Python scripts from the specified otl / otls.")
+
+    # folder name input
+    parser.add_argument("-n", "--name", type=str, default="otl_scripts_folder", help="specify a name for the generated "
+                                                                                     "scripts folder.")
+
+    # folder directory input
+    parser.add_argument("-d", "--directory", type=str, help="specify a directory for the generated scripts folder.")
+
+    # parse args
+    args = parser.parse_args()
+
+    if not args.otl_paths_list and not args.otlUpdate:
+        parser.error("provide a text file or a specific otl path to generate the scripts folder.")
+
+    # folder directory
+    if args.directory:
+        if args.directory[-1] == "/":
+            otls_folder_path = args.directory
+        else:
+            otls_folder_path = args.directory + "/"
+
+    # if text file is given, default folder directory is the same is the text file,
+    # else it is the same as the tool.
+    if not args.directory:
+        if args.otl_paths_list:
+            txt_file_name = os.path.basename(args.otl_paths_list)
+            otls_folder_path = args.otl_paths_list[:-len(txt_file_name)]
+        else:
+            # the olts_folder_path is the same as the text file.
+            this_file_path = os.path.abspath(__file__)
+            this_file_name = os.path.basename(this_file_path)
+            otls_folder_path = this_file_path[:-len(this_file_name)]
+
+    # folder name
+    if args.name:
+        folder_name = args.name
+    else:
+        folder_name = "otl_python_scripts"
+
+    if args.otl_paths_list:
+        txt_file_path = args.otl_paths_list
+
+        # access individual paths from .txt file
+        with open(txt_file_path, 'r') as file:
+            file_contents = file.read()
+
+        otl_file_paths = file_contents.split("\n")
+
+        if txt_file_path[-4:] != ".txt":
+            parser.error("Given file is not a text file\n\n")
+
+        print("\n\nGiven text file path:" + txt_file_path + "\n\n")
+
+        # extract(txt_file_path, otl_file_paths)
+        extract(otl_file_paths, otls_folder_path, folder_name)
+
+    if args.otlUpdate:
+        extract(args.otlUpdate, otls_folder_path, folder_name)
 
     print("Script ran successfully\n\n")
 
 
-def parse_args():
-    # access individual paths from .txt file
-    txt_file_path = sys.argv[1]
-    with open(txt_file_path, 'r') as file:
-        file_contents = file.read()
-
-    file_paths = file_contents.split("\n")
-
-    return txt_file_path, file_paths
-
-
-def extract(txt_file_path, file_paths):
+def extract(file_paths, otls_folder_path, name):
     """
-    :param str txt_file_path: a text file containing a list of pathways to otls
+    :param str otls_folder_path: a text file containing a list of pathways to otls
     :param list file_paths: a list of pathways to otls
+    :param str name: name of the generated folder
     """
 
     """
     function to iterate through all the otls and extract all python scripts inside.
     """
 
-    # calculate the name of the text file
-    txt_file_name = os.path.basename(txt_file_path)
-
-    # calculate the OTL scripts folder path from the file path by subtracting the text file name
-    # the first line is the original.
-    # otls_folder_path = txt_file_path[:-len(txt_file_name)]
-    otls_folder_path = "/job/commsdev/ia_internship_2020_1/sandbox/asaravan/"
-
     # create a folder to store the scripts
     scripts_folder_exists = False
-    scripts_folder_path = otls_folder_path + "otl_python_scripts/"
+    scripts_folder_path = otls_folder_path + name + "/"
 
     # check if the script had already been run once, i.e. the scripts folder already exists.
     if os.path.exists(scripts_folder_path):
@@ -92,7 +132,7 @@ def extract(txt_file_path, file_paths):
                 # checks if a scripts folder was already generated, if it was,
                 # get the last modified time of the otl folders.
                 if scripts_folder_exists:
-                    print("scripts folder already exists\n\n")
+                    # print("scripts folder already exists\n\n")
                     json_file_path = scripts_folder_path + "last_modified_time.json"
 
                     with open(json_file_path, "r") as file:
@@ -104,12 +144,13 @@ def extract(txt_file_path, file_paths):
                         print(otl_unique_name + " was modified, updating it.\n\n")
                         shutil.rmtree(otl_folder_path)
                     else:
-                        print("None of the OTLs were modified, proceeding as normal.\n\n")
-
-                    if os.path.exists(otl_folder_path):
+                        # print("None of the OTLs were modified, proceeding as normal.\n\n")
                         pass
-                    else:
-                        os.mkdir(otl_folder_path)
+
+                if os.path.exists(otl_folder_path):
+                    pass
+                else:
+                    os.mkdir(otl_folder_path)
 
                 # append to the otl hash dictionary
                 otl_hash_dict[otl_unique_name] = file_path
