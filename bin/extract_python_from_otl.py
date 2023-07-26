@@ -147,7 +147,7 @@ def extract_py_from_otl(file_paths, scripts_folder_path):
 
         # checks if a scripts folder was already generated, if it was,
         # get the last modified time of the otl folders.
-        if os.path.exists(scripts_folder_path):
+        if os.path.exists(otl_folder_path):
             # print("scripts folder already exists\n\n")
             json_file_path = os.path.join(scripts_folder_path, "log.json")
             with open(json_file_path, "r") as file_obj:
