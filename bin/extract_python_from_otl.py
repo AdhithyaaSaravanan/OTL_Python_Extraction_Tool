@@ -162,7 +162,7 @@ def extract_py_from_otl(file_paths, scripts_folder_path):
                 # print("None of the OTLs were modified, proceeding as normal.\n\n")
                 pass
 
-        if not os.path.exists(otl_folder_path):
+        else:
             os.mkdir(otl_folder_path)
 
         # append to the otl hash dictionary
