@@ -64,7 +64,7 @@ def parse_args():
                         help="A text file with a list of otl pathways.")
     # otl input
     parser.add_argument("-o", "--otl", type=str, nargs='*',
-                        help="Pathway to an otl / otls.")
+                        help="Pathway to an otl(s).")
     # folder name input
     parser.add_argument("-n", "--name", type=str, default="otl_scripts_folder", help="Name of the generated "
                                                                                      "scripts folder.")
