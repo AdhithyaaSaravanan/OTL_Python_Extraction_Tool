@@ -64,12 +64,12 @@ def parse_args():
                         help="A text file with a list of otl pathways.")
     # otl input
     parser.add_argument("-o", "--otl", type=str, nargs='*',
-                        help="Pathway to an otl.")
+                        help="Pathway to an otl / otls.")
     # folder name input
-    parser.add_argument("-n", "--name", type=str, default="otl_scripts_folder", help="A name for the generated "
+    parser.add_argument("-n", "--name", type=str, default="otl_scripts_folder", help="Name of the generated "
                                                                                      "scripts folder.")
     # output_folder input
-    parser.add_argument("-dir", "--output_folder", type=str, help="A output_folder for the generated scripts folder.")
+    parser.add_argument("-dir", "--output_folder", type=str, help="An output_folder for the generated scripts folder.")
 
     # parse args
     args = parser.parse_args()
@@ -84,23 +84,22 @@ def extract(file_paths, otls_folder_path, name):
     """
     function to iterate through all the otls and extract all python scripts inside.
 
-    :param str otls_folder_path: Parent directory of the scripts folder.
+    :param str otls_folder_path: Parent directory of the scripts-folder.
     :param list file_paths: a list of pathways to otls.
     :param str name: name of the generated folder.
     """
 
     # create a folder to store the scripts
-    scripts_folder_exists = False
     scripts_folder_path = os.path.join(otls_folder_path, name)
-    # if a different name is given, then it doesn't detect it.
+    # edge case: if a different name is given, then it doesn't detect it.
 
     # check if the script had already been run once, i.e. the scripts folder already exists.
-    if os.path.exists(scripts_folder_path):
-        scripts_folder_exists = True
-    else:
+    if not os.path.exists(scripts_folder_path):
         os.mkdir(scripts_folder_path)
 
-    otl_hash_dict = extract_py_from_otl(file_paths, name, otls_folder_path, scripts_folder_exists, scripts_folder_path)
+    otl_hash_dict = extract_py_from_otl(file_paths, scripts_folder_path)
+
+    print("{0} folder generated at: {1}\n\n".format(name, otls_folder_path))
 
     # write the otl hash dict to a json file
     j_otl_hash_dict = json.dumps(otl_hash_dict, indent=2)
@@ -108,16 +107,12 @@ def extract(file_paths, otls_folder_path, name):
         file_obj.write(j_otl_hash_dict)
 
 
-def extract_py_from_otl(file_paths, name, otls_folder_path, scripts_folder_exists, scripts_folder_path):
+def extract_py_from_otl(file_paths, scripts_folder_path):
     """
     Extracts all python scripts inside an OTL.
 
     :param list file_paths: list of all the otl paths.
-    :param str name: name of the scripts-folder.
-    :param str otls_folder_path: Parent directory of the scripts-folder.
-    :param bool scripts_folder_exists: True if the scripts folder already exists,
-            i.e. the tool has already been run before.
-    :param scripts_folder_path: path to the generated scripts folder.
+    :param scripts_folder_path: path to the generated scripts-folder.
     :return: otl_hash_dict - a dictionary of all the unique otl names [key]
             and the directory of the files they correspond to, along with
             the last modified times of the respective OTLS [value].
@@ -152,7 +147,7 @@ def extract_py_from_otl(file_paths, name, otls_folder_path, scripts_folder_exist
 
         # checks if a scripts folder was already generated, if it was,
         # get the last modified time of the otl folders.
-        if scripts_folder_exists:
+        if os.path.exists(scripts_folder_path):
             # print("scripts folder already exists\n\n")
             json_file_path = os.path.join(scripts_folder_path, "log.json")
             with open(json_file_path, "r") as file_obj:
@@ -181,7 +176,6 @@ def extract_py_from_otl(file_paths, name, otls_folder_path, scripts_folder_exist
         with open(os.path.join(otl_folder_path, "log.json"), "w") as file_obj:
             file_obj.write(j_hda_hash_dict)
 
-    print("{0} folder generated at: {1}\n\n".format(name, otls_folder_path))
     return otl_hash_dict
 
 
