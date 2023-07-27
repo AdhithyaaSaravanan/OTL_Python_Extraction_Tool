@@ -1,8 +1,5 @@
-#!/usr/bin/env hython
+#! /usr/bin/env hython
 
-# CM_NO_SGTK=1
-
-# import sys
 import hou
 import argparse
 import shutil
@@ -16,8 +13,8 @@ def main():
 
     args = parse_args()
 
-    if args.output_folder:
-        otls_folder_path = args.output_folder
+    if args.directory:
+        otls_folder_path = args.directory
 
     # if text file is given, default folder output_folder is the same is the text file,
     # else it is the same as the tool.
@@ -38,7 +35,6 @@ def main():
 
         # access individual paths from .txt file
         with open(txt_file_path, 'r') as file_obj:
-            # otl_file_paths = file_obj.readlines()
             file_contents = file_obj.read()
             otl_file_paths = file_contents.split()
 
@@ -48,7 +44,7 @@ def main():
         # args.otl arg is provided instead of a list of otl pathways
         otl_file_paths = args.otl
 
-    extract(otl_file_paths, otls_folder_path, folder_name)
+    extract_python(otl_file_paths, otls_folder_path, folder_name)
     print("Script ran successfully\n\n")
 
 
@@ -61,7 +57,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="extracts python scripts from a given list of otls")
     # text file input
     parser.add_argument("-f", "--otl_paths_file", type=str,
-                        help="A text file with a list of otl pathways.")
+                        help="A file with a list of otl pathways.")
     # otl input
     parser.add_argument("-o", "--otl", type=str, nargs='*',
                         help="Pathway to an otl(s).")
@@ -69,7 +65,7 @@ def parse_args():
     parser.add_argument("-n", "--name", type=str, default="otl_scripts_folder", help="Name of the generated "
                                                                                      "scripts folder.")
     # output_folder input
-    parser.add_argument("-dir", "--output_folder", type=str, help="An output_folder for the generated scripts folder.")
+    parser.add_argument("-dir", "--directory", type=str, help="An output_folder for the generated scripts folder.")
 
     # parse args
     args = parser.parse_args()
@@ -80,28 +76,28 @@ def parse_args():
     return args
 
 
-def extract(file_paths, otls_folder_path, name):
+def extract_python(file_paths, otls_folder_path, name):
     """
     function to iterate through all the otls and extract all python scripts inside.
 
-    :param str otls_folder_path: Parent directory of the scripts-folder.
     :param list file_paths: a list of pathways to otls.
+    :param str otls_folder_path: Parent directory of the scripts-folder.
     :param str name: name of the generated folder.
     """
 
     # create a folder to store the scripts
     scripts_folder_path = os.path.join(otls_folder_path, name)
-    # edge case: if a different name is given, then it doesn't detect it.
 
-    # check if the script had already been run once, i.e. the scripts folder already exists.
     if not os.path.exists(scripts_folder_path):
         os.mkdir(scripts_folder_path)
 
+    # Function to iterate through all the hdas inside each otl to
+    # extract python scripts. It returns a dict containing the unique
+    # names, file path and the last modified time of each otl.
     otl_hash_dict = extract_py_from_otl(file_paths, scripts_folder_path)
 
     print("{0} folder generated at: {1}\n\n".format(name, otls_folder_path))
 
-    # write the otl hash dict to a json file
     j_otl_hash_dict = json.dumps(otl_hash_dict, indent=2)
     with open(os.path.join(scripts_folder_path, "log.json"), "w") as file_obj:
         file_obj.write(j_otl_hash_dict)
@@ -109,13 +105,13 @@ def extract(file_paths, otls_folder_path, name):
 
 def extract_py_from_otl(file_paths, scripts_folder_path):
     """
-    Extracts all python scripts inside an OTL.
+    Extracts all the python scripts inside each otl.
 
     :param list file_paths: list of all the otl paths.
-    :param scripts_folder_path: path to the generated scripts-folder.
+    :param str scripts_folder_path: path to the generated scripts-folder.
     :return: otl_hash_dict - a dictionary of all the unique otl names [key]
-            and the directory of the files they correspond to, along with
-            the last modified times of the respective OTLS [value].
+            and the file paths, along with the last modified times of
+            the respective otlS [value].
     """
 
     # dict for storing and displaying the otl hash values
@@ -126,29 +122,28 @@ def extract_py_from_otl(file_paths, scripts_folder_path):
 
         # check if path is valid
         if not os.path.exists(file_path):
-            print("file path not valid, continuing to other HDAs: {0}\n\n".format(file_path))
+            print("file path not valid, continuing to other hdas: {0}\n\n".format(file_path))
             continue
 
         try:
             definitions = hou.hda.definitionsInFile(file_path)
         except hou.Error:
-            print("Could not load HDA file: {0}\n\n".format(file_path))
+            print("Could not load hda file: {0}\n\n".format(file_path))
             continue
 
         try:
             hou.hda.installFile(file_path)
         except hou.Error:
-            print("Could not install HDA file: {0}\n\n".format(file_path))
+            print("Could not install hda file: {0}\n\n".format(file_path))
             continue
 
-        # Make a folder for each OTL
+        # Make a folder for each otl
         otl_unique_name = make_unique_name(file_path)
         otl_folder_path = os.path.join(scripts_folder_path, otl_unique_name)
 
         # checks if a scripts folder was already generated, if it was,
         # get the last modified time of the otl folders.
         if os.path.exists(otl_folder_path):
-            # print("scripts folder already exists\n\n")
             json_file_path = os.path.join(scripts_folder_path, "log.json")
             with open(json_file_path, "r") as file_obj:
                 older_time_data = json.load(file_obj)
@@ -158,9 +153,6 @@ def extract_py_from_otl(file_paths, scripts_folder_path):
             if get_last_modified_time(file_path) != older_time_data[otl_unique_name][1]:
                 print("{0} was modified, updating it.\n\n".format(otl_unique_name))
                 shutil.rmtree(otl_folder_path)
-            else:
-                # print("None of the OTLs were modified, proceeding as normal.\n\n")
-                pass
 
         else:
             os.mkdir(otl_folder_path)
@@ -168,7 +160,7 @@ def extract_py_from_otl(file_paths, scripts_folder_path):
         # append to the otl hash dictionary
         otl_hash_dict[otl_unique_name] = file_path, "last_mod_time: " + get_last_modified_time(file_path)
 
-        # iterate through all the HDAs inside the OTl and extract the python scripts
+        # iterate through all the hdas inside the otl and extract the python scripts
         hda_hash_dict = extract_py_from_hda(definitions, otl_folder_path)
 
         # write the hda hash dict to a json file
@@ -181,18 +173,18 @@ def extract_py_from_otl(file_paths, scripts_folder_path):
 
 def extract_py_from_hda(definitions, otl_folder_path):
     """
-    Extracts all python scripts inside an HDA.
+    Extracts all python scripts inside an hda.
 
-    :param definitions: All the HDA definitions inside an OTL.
-    :param str otl_folder_path: Directory of the OTL-folder.
+    :param list definitions: List of all the hda definitions inside an otl.
+    :param str otl_folder_path: Parent directory of the otl-folder.
     :return: hda_hash_dict - a dictionary of all the unique hda names [key]
-            and the directory of the files they correspond to [value].
+            and the file paths [value].
     """
 
     # dict for storing and displaying the hda hash values
     hda_hash_dict = dict()
 
-    # Make a folder for each HDA and extract the python files inside
+    # Make a folder for each hda and extract the python files inside
     for definition in definitions:
         hda_unique_name = make_unique_name(definition)
         hda_folder_path = os.path.join(otl_folder_path, hda_unique_name)
@@ -200,7 +192,7 @@ def extract_py_from_hda(definitions, otl_folder_path):
         if not os.path.exists(hda_folder_path):
             os.mkdir(hda_folder_path)
 
-        # extract the python scripts inside all the components of the HDA and write to file
+        # extract the python scripts inside all the components of the hda and write to file
         extract_py_and_write(definition, hda_folder_path)
 
         # append to the hda hash dictionary
@@ -212,10 +204,10 @@ def extract_py_from_hda(definitions, otl_folder_path):
 
 def make_unique_name(var):
     """
-    Makes a unique name with a hash for an HDA or an OTL.
+    Makes a unique name with a hash for an hda or an otl.
     
-    Input for otl folder name hash = string of file path of otl.
-    Input for hda folder name hash = definition of hda.
+    Input for otl folder name hash = String of file path of otl.
+    Input for hda folder name hash = Definition of an hda.
 
     :param var: Either a str (file path of an otl) or an hda definition.
     :return: A hashed name of an otl or an hda.
@@ -224,7 +216,7 @@ def make_unique_name(var):
     hash_key = get_hash(var)
 
     # if var is an hda definition
-    if isinstance(var, hou.HDADefinition):
+    if isinstance(var, hou.hdaDefinition):
         name = var.nodeTypeName()
         unique_name = str(name) + "_" + str(hash_key)
 
@@ -256,10 +248,10 @@ def get_hash(var):
 
 def get_last_modified_time(file_path):
     """
-    Gets the last modified time of an HDA file.
+    Gets the last modified time of an otl file.
 
-    :param str file_path: file path to an hda
-    :return: string of the last modified time of the hda
+    :param str file_path: File path to an otl.
+    :return: String of the last modified time of the hda.
     """
 
     modify_time = os.path.getmtime(file_path)
@@ -269,19 +261,18 @@ def get_last_modified_time(file_path):
 
 def extract_py_and_write(definition, hda_folder_path):
     """
-    Extracts all the python scripts inside an HDA and writes it to a file on disk.
+    Extracts all the python scripts inside an hda and writes it to a file on disk.
 
     (input for otl folder name hash = string of file path of otl
     input for hda folder name hash = definition of hda)
 
-    :param definition: hda file definition
-    :param hda_folder_path: string containing the folder name
+    :param definition: hda file definition.
+    :param hda_folder_path: Directory of the generated hda folder.
     """
 
+    # Extract python scripts in the scripts tab.
     extract_py_scripts(definition, hda_folder_path)
 
-    # pull out the call back scripts from separate parameters
-    # access each parameter
     ptg = definition.parmTemplateGroup()
     pt = ptg.parmTemplates()
 
@@ -291,7 +282,10 @@ def extract_py_and_write(definition, hda_folder_path):
         # iterate through each parameter
         for parm in pt:
 
+            # Extract python scripts in the item generation tab inside certain parameters.
             extract_menu_scripts(hda_folder_path, parm)
+
+            # Extract python scripts in the parameter callbacks.
             extract_parameter_callbacks(hda_folder_path, parm)
 
 
@@ -299,8 +293,8 @@ def extract_parameter_callbacks(hda_folder_path, parm):
     """
     Extracts the python scripts inside the parameter callbacks (if any).
 
-    :param str hda_folder_path: Scripts directory of the HDA file.
-    :param parm: HDA parameter.
+    :param str hda_folder_path: Directory of the hda file.
+    :param parm: hda parameter.
     """
 
     # check if a callback script exists, and if it's in python
@@ -323,10 +317,10 @@ def extract_parameter_callbacks(hda_folder_path, parm):
 
 def extract_menu_scripts(hda_folder_path, parm):
     """
-    Extracts the python scripts inside the all the parameters that have a menu (if any).
+    Extracts the python scripts inside certain the parameters (if any).
 
-    :param hda_folder_path: Scripts directory of the HDA file.
-    :param parm: HDA parameter.
+    :param hda_folder_path: Directory of the generated hda folder.
+    :param parm: hda parameter.
     """
 
     # check if a menu script exists, and if it's in python
@@ -352,10 +346,10 @@ def extract_menu_scripts(hda_folder_path, parm):
 
 def extract_py_scripts(definition, hda_folder_path):
     """
-    Extracts the python scripts inside the scripts tab of the HDA file (if any).
+    Extracts the python scripts inside the scripts tab of the hda file (if any).
 
-    :param definition: HDA file definition.
-    :param hda_folder_path: Scripts directory of the HDA file.
+    :param definition: hda file definition.
+    :param hda_folder_path: Directory of the generated hda folder.
     """
 
     # making a folder for the main python scripts
