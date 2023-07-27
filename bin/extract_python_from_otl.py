@@ -16,8 +16,8 @@ def main():
     if args.directory:
         otls_folder_path = args.directory
 
-    # if text file is given, default folder output_folder is the same is the text file,
-    # else it is the same as the tool.
+    # if text file is given, default output folder is the same is the text file,
+    # else it is the current working directory
     else:
         if args.otl_paths_file:
             otls_folder_path = os.path.dirname(args.otl_paths_file)
