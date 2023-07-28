@@ -283,7 +283,7 @@ def extract_py_and_write(definition, hda_folder_path):
         for parm in pt:
 
             # Extract python scripts in the item generation tab inside certain parameters.
-            extract_menu_scripts(hda_folder_path, parm)
+            extract_item_generation_scripts(hda_folder_path, parm)
 
             # Extract python scripts in the parameter callbacks.
             extract_parameter_callbacks(hda_folder_path, parm)
@@ -315,33 +315,33 @@ def extract_parameter_callbacks(hda_folder_path, parm):
                 file_obj.write(callback_py_script)
 
 
-def extract_menu_scripts(hda_folder_path, parm):
+def extract_item_generation_scripts(hda_folder_path, parm):
     """
-    Extracts the python scripts inside certain the parameters (if any).
+    Extracts the item generation scripts inside certain the parameters (if any).
 
     :param hda_folder_path: Directory of the generated hda folder.
     :param parm: hda parameter.
     """
 
-    # check if a menu script exists, and if it's in python
+    # check if an item generation script exists, and if it's in python
     if isinstance(parm, hou.StringParmTemplate) \
             or isinstance(parm, hou.MenuParmTemplate) \
             or isinstance(parm, hou.IntParmTemplate):
         if parm.itemGeneratorScriptLanguage() == hou.scriptLanguage.Python:
-            menu_script = parm.itemGeneratorScript()
+            item_generation_script = parm.itemGeneratorScript()
             file_name = parm.name()
 
-            # menu scripts folder
-            menu_script_folder = os.path.join(hda_folder_path, "menu_script")
-            if not os.path.exists(menu_script_folder):
-                os.mkdir(menu_script_folder)
+            # item generation scripts folder
+            item_generation_scripts_folder = os.path.join(hda_folder_path, "item_generation_scripts")
+            if not os.path.exists(item_generation_scripts_folder):
+                os.mkdir(item_generation_scripts_folder)
 
-            script_file_path = os.path.join(menu_script_folder, file_name + ".py")
+            script_file_path = os.path.join(item_generation_scripts_folder, file_name + ".py")
 
             # check if file exists, if it does, don't update it
             if not os.path.exists(script_file_path):
                 with open(script_file_path, 'w') as file_obj:
-                    file_obj.write(menu_script)
+                    file_obj.write(item_generation_script)
 
 
 def extract_py_scripts(definition, hda_folder_path):
