@@ -1,6 +1,10 @@
-#! /usr/bin/env hython
 
-import hou
+try:
+    import hou
+except ImportError:
+    # This should only happen when not running under Hython during testing
+    hou = None
+
 import argparse
 import shutil
 import os
