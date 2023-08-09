@@ -1,4 +1,3 @@
-
 try:
     import hou
 except ImportError:
@@ -113,7 +112,7 @@ def extract_py_from_otl(file_paths, scripts_folder_path):
 
     :param list file_paths: list of all the otl paths.
     :param str scripts_folder_path: path to the generated scripts-folder.
-    :return: otl_hash_dict - a dictionary of all the unique otl names [key]
+    :return: dict otl_hash_dict - a dictionary of all the unique otl names [key]
             and the file paths, along with the last modified times of
             the respective otlS [value].
     """
@@ -174,7 +173,7 @@ def extract_py_from_otl(file_paths, scripts_folder_path):
 
     return otl_hash_dict
 
-
+# tested
 def extract_py_from_hda(definitions, otl_folder_path):
     """
     Extracts all python scripts inside an hda.
@@ -220,7 +219,7 @@ def make_unique_name(var):
     hash_key = get_hash(var)
 
     # if var is an hda definition
-    if isinstance(var, hou.hdaDefinition):
+    if isinstance(var, hou.HDADefinition):
         name = var.nodeTypeName()
         unique_name = str(name) + "_" + str(hash_key)
 
@@ -232,7 +231,7 @@ def make_unique_name(var):
     unique_name = unique_name.replace("/", "_").replace(" ", "_").replace(".", "_")
     return unique_name
 
-
+# tested
 def get_hash(var):
     """
     Generates a unique hash for the input.
@@ -262,7 +261,7 @@ def get_last_modified_time(file_path):
     modify_date = dt.datetime.fromtimestamp(modify_time)
     return str(modify_date)
 
-
+# tested
 def extract_py_and_write(definition, hda_folder_path):
     """
     Extracts all the python scripts inside an hda and writes it to a file on disk.
@@ -275,7 +274,8 @@ def extract_py_and_write(definition, hda_folder_path):
     """
 
     # Extract python scripts in the scripts tab.
-    extract_py_scripts(definition, hda_folder_path)
+    result_1 = extract_py_scripts(definition, hda_folder_path)
+    write_result_to_disk(result_1)
 
     ptg = definition.parmTemplateGroup()
     pt = ptg.parmTemplates()
@@ -284,41 +284,57 @@ def extract_py_and_write(definition, hda_folder_path):
     if len(pt) != 0:
 
         # iterate through each parameter
-        for parm in pt:
+        for parm_template in pt:
 
             # Extract python scripts in the item generation tab inside certain parameters.
-            extract_item_generation_scripts(hda_folder_path, parm)
+            result_2 = extract_item_generation_scripts(hda_folder_path, parm_template)
+            write_result_to_disk(result_2)
 
             # Extract python scripts in the parameter callbacks.
-            extract_parameter_callbacks(hda_folder_path, parm)
+            result_3 = extract_parameter_callbacks(hda_folder_path, parm_template)
+            write_result_to_disk(result_3)
 
+# tested
+def write_result_to_disk(result):
 
-def extract_parameter_callbacks(hda_folder_path, parm):
+    for filename, data in result.items():
+        # check if file exists, if it does, don't update it
+        if not os.path.exists(filename):
+            # print("path_exists = False, inside the if")
+            with open(filename, 'w') as file_obj:
+                # print("inside open")
+                file_obj.write(data)
+                # print("written file")
+
+# tested
+def extract_parameter_callbacks(hda_folder_path, parm_template):
     """
     Extracts the python scripts inside the parameter callbacks (if any).
 
     :param str hda_folder_path: Directory of the hda file.
-    :param parm: hda parameter.
+    :param parm_template: hda parameter template.
+    :return dict result: dict of all the python scripts
     """
 
+    result = {}
+
     # check if a callback script exists, and if it's in python
-    if parm.scriptCallbackLanguage() == hou.scriptLanguage.Python and len(parm.scriptCallback()) > 0:
+    if parm_template.scriptCallbackLanguage() == hou.scriptLanguage.Python and len(parm_template.scriptCallback()) > 0:
 
         # parameter callback folder
         parameter_callback_folder = os.path.join(hda_folder_path, "parameter_callbacks")
         if not os.path.exists(parameter_callback_folder):
             os.mkdir(parameter_callback_folder)
 
-        callback_py_script = parm.scriptCallback()
-        script_name = parm.name()
+        callback_py_script = parm_template.scriptCallback()
+        script_name = parm_template.name()
         script_file_path = os.path.join(parameter_callback_folder, script_name + ".py")
 
-        # check if file exists, if it does, don't update it
-        if not os.path.exists(script_file_path):
-            with open(script_file_path, 'w') as file_obj:
-                file_obj.write(callback_py_script)
+        result[script_file_path] = callback_py_script
 
+    return result
 
+# tested
 def extract_item_generation_scripts(hda_folder_path, parm):
     """
     Extracts the item generation scripts inside certain the parameters (if any).
@@ -327,27 +343,29 @@ def extract_item_generation_scripts(hda_folder_path, parm):
     :param parm: hda parameter.
     """
 
+    result = {}
+
     # check if an item generation script exists, and if it's in python
     if isinstance(parm, hou.StringParmTemplate) \
             or isinstance(parm, hou.MenuParmTemplate) \
             or isinstance(parm, hou.IntParmTemplate):
         if parm.itemGeneratorScriptLanguage() == hou.scriptLanguage.Python:
-            item_generation_script = parm.itemGeneratorScript()
-            file_name = parm.name()
+            if len(parm.itemGeneratorScript()) > 0:
+                item_generation_script = parm.itemGeneratorScript()
+                file_name = parm.name()
 
-            # item generation scripts folder
-            item_generation_scripts_folder = os.path.join(hda_folder_path, "item_generation_scripts")
-            if not os.path.exists(item_generation_scripts_folder):
-                os.mkdir(item_generation_scripts_folder)
+                # item generation scripts folder
+                item_generation_scripts_folder = os.path.join(hda_folder_path, "item_generation_scripts")
+                if not os.path.exists(item_generation_scripts_folder):
+                    os.mkdir(item_generation_scripts_folder)
 
-            script_file_path = os.path.join(item_generation_scripts_folder, file_name + ".py")
+                script_file_path = os.path.join(item_generation_scripts_folder, file_name + ".py")
 
-            # check if file exists, if it does, don't update it
-            if not os.path.exists(script_file_path):
-                with open(script_file_path, 'w') as file_obj:
-                    file_obj.write(item_generation_script)
+                result[script_file_path] = item_generation_script
 
+    return result
 
+# tested
 def extract_py_scripts(definition, hda_folder_path):
     """
     Extracts the python scripts inside the scripts tab of the hda file (if any).
@@ -355,6 +373,8 @@ def extract_py_scripts(definition, hda_folder_path):
     :param definition: hda file definition.
     :param hda_folder_path: Directory of the generated hda folder.
     """
+
+    result = {}
 
     # making a folder for the main python scripts
     main_py_scripts_folder = os.path.join(hda_folder_path, "main_python_scripts")
@@ -378,10 +398,9 @@ def extract_py_scripts(definition, hda_folder_path):
 
             script_file_path = os.path.join(main_py_scripts_folder, file_name + ".py")
 
-            # check if file exists, if it does, don't update it
-            if not os.path.exists(script_file_path):
-                with open(script_file_path, 'w') as file_obj:
-                    file_obj.write(py_script)
+            result[script_file_path] = py_script
+
+    return result
 
 
 if __name__ == '__main__':
