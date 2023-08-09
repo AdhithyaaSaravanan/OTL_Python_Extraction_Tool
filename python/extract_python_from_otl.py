@@ -125,7 +125,8 @@ def extract_py_from_otl(file_paths, scripts_folder_path):
 
         # check if path is valid
         if not os.path.exists(file_path):
-            print("file path not valid, continuing to other hdas: {0}\n\n".format(file_path))
+            # print("file path not valid, continuing to other hdas: {0}\n\n".format(file_path))
+            print("called path exists")
             continue
 
         try:
@@ -161,7 +162,9 @@ def extract_py_from_otl(file_paths, scripts_folder_path):
             os.mkdir(otl_folder_path)
 
         # append to the otl hash dictionary
-        otl_hash_dict[otl_unique_name] = file_path, "last_mod_time: " + get_last_modified_time(file_path)
+        file_dict = {"file_path" : file_path,
+                     "last_mod_time" : get_last_modified_time(file_path)}
+        otl_hash_dict[otl_unique_name] = file_dict
 
         # iterate through all the hdas inside the otl and extract the python scripts
         hda_hash_dict = extract_py_from_hda(definitions, otl_folder_path)
@@ -300,11 +303,8 @@ def write_result_to_disk(result):
     for filename, data in result.items():
         # check if file exists, if it does, don't update it
         if not os.path.exists(filename):
-            # print("path_exists = False, inside the if")
             with open(filename, 'w') as file_obj:
-                # print("inside open")
                 file_obj.write(data)
-                # print("written file")
 
 # tested
 def extract_parameter_callbacks(hda_folder_path, parm_template):
