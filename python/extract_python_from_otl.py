@@ -126,7 +126,6 @@ def extract_py_from_otl(file_paths, scripts_folder_path):
         # check if path is valid
         if not os.path.exists(file_path):
             # print("file path not valid, continuing to other hdas: {0}\n\n".format(file_path))
-            print("called path exists")
             continue
 
         try:
@@ -176,7 +175,7 @@ def extract_py_from_otl(file_paths, scripts_folder_path):
 
     return otl_hash_dict
 
-# tested
+
 def extract_py_from_hda(definitions, otl_folder_path):
     """
     Extracts all python scripts inside an hda.
@@ -234,7 +233,7 @@ def make_unique_name(var):
     unique_name = unique_name.replace("/", "_").replace(" ", "_").replace(".", "_")
     return unique_name
 
-# tested
+
 def get_hash(var):
     """
     Generates a unique hash for the input.
@@ -264,7 +263,7 @@ def get_last_modified_time(file_path):
     modify_date = dt.datetime.fromtimestamp(modify_time)
     return str(modify_date)
 
-# tested
+
 def extract_py_and_write(definition, hda_folder_path):
     """
     Extracts all the python scripts inside an hda and writes it to a file on disk.
@@ -297,7 +296,7 @@ def extract_py_and_write(definition, hda_folder_path):
             result_3 = extract_parameter_callbacks(hda_folder_path, parm_template)
             write_result_to_disk(result_3)
 
-# tested
+
 def write_result_to_disk(result):
 
     for filename, data in result.items():
@@ -306,7 +305,7 @@ def write_result_to_disk(result):
             with open(filename, 'w') as file_obj:
                 file_obj.write(data)
 
-# tested
+
 def extract_parameter_callbacks(hda_folder_path, parm_template):
     """
     Extracts the python scripts inside the parameter callbacks (if any).
@@ -334,7 +333,7 @@ def extract_parameter_callbacks(hda_folder_path, parm_template):
 
     return result
 
-# tested
+
 def extract_item_generation_scripts(hda_folder_path, parm):
     """
     Extracts the item generation scripts inside certain the parameters (if any).
@@ -365,7 +364,7 @@ def extract_item_generation_scripts(hda_folder_path, parm):
 
     return result
 
-# tested
+
 def extract_py_scripts(definition, hda_folder_path):
     """
     Extracts the python scripts inside the scripts tab of the hda file (if any).
@@ -401,6 +400,7 @@ def extract_py_scripts(definition, hda_folder_path):
             result[script_file_path] = py_script
 
     return result
+
 
 
 if __name__ == '__main__':

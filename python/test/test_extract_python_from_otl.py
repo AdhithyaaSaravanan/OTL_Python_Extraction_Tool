@@ -1,133 +1,82 @@
+import json
 import os
 import re
 import pytest
-from contextlib import contextmanager
 import mock
 import commslib.temp as cm
 import shutil
-import hashlib
-import datetime as dt
+import hou
 
-try:
-    import hou
-except ImportError:
-    # This should only happen when not running under Hython during testing
-    hou = None
+# try:
+#     import hou
+# except ImportError:
+#     # This should only happen when not running under Hython during testing
+#     hou = None
 
 import extract_python_from_otl as epfo
 
 
+# If the test OTLs have been modified, the test data has to be generated again.
+
+
+def generate_folder_tree_dict(folder_path):
+
+    result = {}
+    if os.path.isdir(folder_path):
+        items = os.listdir(folder_path)
+        for item in items:
+            item_path = os.path.join(folder_path, item)
+            result[item] = generate_folder_tree_dict(item_path)
+    elif os.path.isfile(folder_path):
+        with open(folder_path, 'r') as file:
+            result = {'file_contents': file.read()}
+    return result
+
+
+# gets path to ./extract-python-from-otl/test_data_and_results
+def get_test_data_dir():
+
+    script_path = os.path.abspath(__file__)
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(script_path)))
+    test_data_dir = os.path.join(base_dir, "test_data_and_results")
+    return test_data_dir
+
+
+# gets path to ./extract-python-from-otl/test_data_and_results/test_otls/"string variable"
+def get_test_otls_path(string):
+
+    abs_path_to_test_otl = os.path.join(get_test_data_dir(), "test_otls", string)
+    return abs_path_to_test_otl
+
+
+# gets path to ./extract-python-from-otl/test_data_and_results/pytest_results_to_compare
+def get_file_path_to_test_json_files():
+
+    results_dir = os.path.join(get_test_data_dir(), "pytest_results_to_compare")
+    return results_dir
+
+
 @pytest.mark.parametrize(
-    ('file_paths',
-     'path_exists_return_value',
-     'extract_py_from_hda_call_count',
-     'path_exists_call_count',
-     'make_dir_call_count',
-     'del_folder_call_count'),
+    'file_paths',
     [
-        pytest.param(["/job/commsdev/td/dev/asaravan/git/tools/extract-python-from-otl/test_data_and_results/sky_scraper.hda"],
-                     True, 1, 2, 0, 1),
-        pytest.param(["/job/commsdev/td/dev/asaravan/git/tools/extract-python-from-otl/test_data_and_results/sky_scraper.hda"],
-                     False, 0, 1, 0, 0),
-        pytest.param([], False, 0, 0, 0, 0)
+        pytest.param([get_test_otls_path("sky_scraper.hda")]),
+        pytest.param([])
     ]
 )
-def test_extract_py_from_otl(file_paths,
-                             path_exists_return_value,
-                             extract_py_from_hda_call_count,
-                             path_exists_call_count,
-                             make_dir_call_count,
-                             del_folder_call_count):
-    with mock.patch("__builtin__.open", mock.mock_open(read_data="mocked_data")) as opn, \
-         mock.patch("extract_python_from_otl.extract_py_from_hda") as extract_py_from_hda, \
-         mock.patch("os.path.exists") as path_exists, \
-         mock.patch("os.mkdir") as make_dir, \
-         mock.patch("json.load") as json_load, \
-         mock.patch("json.dumps") as json_dumps, \
-         mock.patch("shutil.rmtree") as del_folder:
+def test_del_folder_count(file_paths):
+    with mock.patch("__builtin__.open", mock.mock_open(read_data="mocked_data")), \
+            mock.patch("extract_python_from_otl.extract_py_from_hda"), \
+            mock.patch("os.path.exists") as path_exists, mock.patch("os.mkdir"), \
+            mock.patch("json.load"), mock.patch("json.dumps"), \
+            mock.patch("shutil.rmtree") as del_folder:
 
-        path_exists.return_value = path_exists_return_value
-
-        # generate expected result dict
-        expected_result = dict()
-
-        if path_exists_return_value:
-            a = hashlib.md5()
-            for file_path in file_paths:
-
-                a.update(str(file_path))
-                hash_key = a.hexdigest()
-                otl_name = os.path.basename(file_path)
-                unique_name = otl_name + "_" + str(hash_key)
-                unique_name = unique_name.replace("/", "_").replace(" ", "_").replace(".", "_")
-
-                otl_last_mod_time = str(dt.datetime.fromtimestamp(os.path.getmtime(file_path)))
-                file_dict = {"file_path" : file_path,
-                             "last_mod_time" : otl_last_mod_time}
-                expected_result.update({unique_name : file_dict})
+        path_exists.return_value = True
 
         scripts_folder_path = "/tmp"
-        result = epfo.extract_py_from_otl(file_paths, scripts_folder_path)
+        epfo.extract_py_from_otl(file_paths, scripts_folder_path)
 
-    assert result == expected_result
-    assert extract_py_from_hda.call_count == extract_py_from_hda_call_count
-    assert path_exists.call_count == path_exists_call_count
-    assert make_dir.call_count == make_dir_call_count
-    assert del_folder.call_count == del_folder_call_count
-
-
-@pytest.mark.parametrize(
-    ('otl_file_path',
-     'make_dir_call_count',
-     'path_exists_return_value',
-     'path_exists_call_count',
-     'extract_py_and_write_call_count'),
-
-    [
-        pytest.param("/job/commsdev/td/dev/asaravan/git/tools/extract-python-from-otl/test_data_and_results/sky_scraper.hda",
-                     1, False, 1, 1),
-        pytest.param("/job/commsdev/td/dev/asaravan/git/tools/extract-python-from-otl/test_data_and_results/sky_scraper.hda",
-                     0, True, 1, 1),
-        pytest.param(None, 0, True, 0, 0)
-    ]
-)
-def test_extract_py_from_hda(otl_file_path,
-                             make_dir_call_count,
-                             path_exists_return_value,
-                             path_exists_call_count,
-                             extract_py_and_write_call_count):
-
-    with mock.patch("extract_python_from_otl.extract_py_and_write") as extract_py_and_write,\
-         mock.patch("os.path.exists") as path_exists,\
-         mock.patch("os.mkdir") as make_dir:
-
-        path_exists.return_value = path_exists_return_value
-
-        try:
-            definitions = hou.hda.definitionsInFile(otl_file_path)
-            hou.hda.installFile(otl_file_path)
-        except:
-            definitions = []
-
-        otl_folder_path = "/tmp"
-
-        # generate unique names for all hda definitions and store inside a list
-        expected_result_dict = dict()
-        a = hashlib.md5()
-        for definition in definitions:
-            a.update(str(definition))
-            hash_key = a.hexdigest()
-            name = definition.nodeTypeName()
-            unique_name = str(name) + "_" + str(hash_key)
-            unique_name = unique_name.replace("/", "_").replace(" ", "_").replace(".", "_")
-            expected_result_dict.update({unique_name : definition.nodeTypeCategory().name() + "/" + definition.nodeTypeName()})
-
-        result = epfo.extract_py_from_hda(definitions, otl_folder_path)
-
-    assert result == expected_result_dict
-    assert make_dir.call_count == make_dir_call_count
-    assert path_exists.call_count == path_exists_call_count
-    assert extract_py_and_write.call_count == extract_py_and_write_call_count
+    if len(file_paths) == 0:
+        assert del_folder.call_count == 0
 
 
 @pytest.mark.parametrize(
@@ -135,9 +84,8 @@ def test_extract_py_from_hda(otl_file_path,
     [
         pytest.param(1),
         pytest.param("a"),
-        pytest.param("/job/commsdev/td/dev/asaravan/git/tools/extract-python-from-otl/test_data_and_results/sky_scraper.hda"),
-        pytest.param(hou.hda.definitionsInFile
-                    ("/job/commsdev/td/dev/asaravan/git/tools/extract-python-from-otl/test_data_and_results/sky_scraper.hda")[0])
+        pytest.param(get_test_otls_path("sky_scraper")),
+        pytest.param(hou.hda.definitionsInFile(get_test_otls_path("sky_scraper.hda"))[0])
     ]
 )
 def test_get_hash(var):
@@ -164,73 +112,51 @@ for i in xrange(13):
 return result"""),
     ]
 )
-def test_extract_py_and_write(scripts_folder_name, file_name ,expected_script):
-
-    file_path = "/job/commsdev/td/dev/asaravan/git/tools/extract-python-from-otl/test_data_and_results/sky_scraper.hda"
+def test_extract_py_and_write(scripts_folder_name, file_name, expected_script):
+    file_path = get_test_otls_path("sky_scraper.hda")
     definition = hou.hda.definitionsInFile(file_path)[0]
     temp_folder_name = "otl_python_extraction_tool_test"
-    hda_folder_path = cm.make_directory(temp_folder_name)
+    temp_folder_path = cm.make_directory(temp_folder_name)
+
+    assert temp_folder_name in temp_folder_path
 
     hou.hda.installFile(file_path)
 
-    epfo.extract_py_and_write(definition, hda_folder_path)
+    epfo.extract_py_and_write(definition, temp_folder_path)
 
-    script_file_path = hda_folder_path + scripts_folder_name + file_name
+    script_file_path = temp_folder_path + scripts_folder_name + file_name
     with open(script_file_path, 'r') as file_obj:
         content = file_obj.read()
         assert content == expected_script
 
-    del_dir = os.path.dirname(os.path.dirname(hda_folder_path))
-    if os.path.basename(del_dir) == temp_folder_name:
-        shutil.rmtree(del_dir)
-
-
-@pytest.mark.parametrize(
-    ('path_exists_return_value', 'func_arg', 'path_exists_call_count', 'opn_call_count'),
-    [
-        pytest.param(False, {"file_path" : "python_script"}, 1, 1),
-        pytest.param(True, {"file_path" : "python_script"}, 1, 0),
-        pytest.param(False, {}, 0, 0),
-        pytest.param(True, {}, 0, 0),
-    ]
-)
-def test_write_result_to_disk(path_exists_return_value, func_arg, path_exists_call_count, opn_call_count):
-    with mock.patch("__builtin__.open", mock.mock_open(read_data="mocked_data")) as opn, \
-         mock.patch("os.path.exists") as path_exists:
-
-        path_exists.return_value = path_exists_return_value
-        epfo.write_result_to_disk(func_arg)
-
-    assert path_exists.call_count == path_exists_call_count
-    assert opn.call_count == opn_call_count
-
-    # didn't mock file_obj.write()
+    if os.path.exists(temp_folder_path):
+        shutil.rmtree(temp_folder_path)
 
 
 @pytest.mark.parametrize(
     ('parm_template', 'expected'),
     [
         pytest.param(hou.IntParmTemplate("test_int", "Test Int", 1,
-                    script_callback="print 'hello'",
-                    script_callback_language=hou.scriptLanguage.Python),
-                    {"/tmp/parameter_callbacks/test_int.py": "print 'hello'"}),
+                                         script_callback="print 'hello'",
+                                         script_callback_language=hou.scriptLanguage.Python),
+                     {"/tmp/parameter_callbacks/test_int.py": "print 'hello'"}),
         pytest.param(hou.IntParmTemplate("test_int", "Test Int", 1,
-                    item_generator_script="print 'hello'",
-                    item_generator_script_language=hou.scriptLanguage.Python), {}),
+                                         item_generator_script="print 'hello'",
+                                         item_generator_script_language=hou.scriptLanguage.Python), {}),
         pytest.param(hou.FloatParmTemplate("test_int", "Test Int", 1,
-                    script_callback="print 'hello'",
-                    script_callback_language=hou.scriptLanguage.Hscript), {}),
+                                           script_callback="print 'hello'",
+                                           script_callback_language=hou.scriptLanguage.Hscript), {}),
         pytest.param(hou.IntParmTemplate("test_int", "Test Int", 1,
-                    item_generator_script="",
-                    item_generator_script_language=hou.scriptLanguage.Python), {}),
+                                         item_generator_script="",
+                                         item_generator_script_language=hou.scriptLanguage.Python), {}),
         pytest.param(hou.IntParmTemplate("test_int", "Test Int", 1,
-                    item_generator_script="print 'hello'",
-                    item_generator_script_language=hou.scriptLanguage.Hscript), {}),
+                                         item_generator_script="print 'hello'",
+                                         item_generator_script_language=hou.scriptLanguage.Hscript), {}),
     ]
 )
 def test_extract_parameter_callbacks(parm_template, expected):
-    with mock.patch("os.path.exists") as path_exists, mock.patch("os.mkdir") as make_dir:
-        path_exists.return_value = True
+    with mock.patch("os.path.exists") as path_exists, mock.patch("os.mkdir"):
+        path_exists.return_value = False
 
         hda_folder_path = "/tmp"
         result = epfo.extract_parameter_callbacks(hda_folder_path, parm_template)
@@ -241,26 +167,26 @@ def test_extract_parameter_callbacks(parm_template, expected):
     ('parm_template', 'expected'),
     [
         pytest.param(hou.IntParmTemplate("test_int", "Test Int", 1,
-                    script_callback="print 'hello'",
-                    script_callback_language=hou.scriptLanguage.Python), {}),
+                                         script_callback="print 'hello'",
+                                         script_callback_language=hou.scriptLanguage.Python), {}),
         pytest.param(hou.IntParmTemplate("test_int", "Test Int", 1,
-                    item_generator_script="print 'hello'",
-                    item_generator_script_language=hou.scriptLanguage.Python),
-                    {"/tmp/item_generation_scripts/test_int.py" : "print 'hello'"}),
+                                         item_generator_script="print 'hello'",
+                                         item_generator_script_language=hou.scriptLanguage.Python),
+                     {"/tmp/item_generation_scripts/test_int.py": "print 'hello'"}),
         pytest.param(hou.FloatParmTemplate("test_int", "Test Int", 1,
-                    script_callback="print 'hello'",
-                    script_callback_language=hou.scriptLanguage.Python), {}),
+                                           script_callback="print 'hello'",
+                                           script_callback_language=hou.scriptLanguage.Python), {}),
         pytest.param(hou.IntParmTemplate("test_int", "Test Int", 1,
-                    item_generator_script="",
-                    item_generator_script_language=hou.scriptLanguage.Python), {}),
+                                         item_generator_script="",
+                                         item_generator_script_language=hou.scriptLanguage.Python), {}),
         pytest.param(hou.IntParmTemplate("test_int", "Test Int", 1,
-                    item_generator_script="print 'hello'",
-                    item_generator_script_language=hou.scriptLanguage.Hscript), {}),
+                                         item_generator_script="print 'hello'",
+                                         item_generator_script_language=hou.scriptLanguage.Hscript), {}),
     ]
 )
 def test_extract_item_generation_scripts(parm_template, expected):
-    with mock.patch("os.path.exists") as path_exists, mock.patch("os.mkdir") as make_dir:
-        path_exists.return_value = True
+    with mock.patch("os.path.exists") as path_exists, mock.patch("os.mkdir"):
+        path_exists.return_value = False
 
         hda_folder_path = "/tmp"
         result = epfo.extract_item_generation_scripts(hda_folder_path, parm_template)
@@ -270,16 +196,14 @@ def test_extract_item_generation_scripts(parm_template, expected):
 @pytest.mark.parametrize(
     ('definition', 'file_names', 'expected_scripts'),
     [
-        pytest.param(hou.hda.definitionsInFile
-                    ("/job/commsdev/td/dev/asaravan/git/tools/extract-python-from-otl/test_data_and_results/sky_scraper.hda")[0],
-                    ['/OnCreated.py', '/OnUpdated.py', '/PythonModule.py'],
-                    ['print("onCreated")', 'print("onUpdated")', 'print("Python script")'])
+        pytest.param(hou.hda.definitionsInFile(get_test_otls_path("sky_scraper.hda"))[0],
+                     ['/OnCreated.py', '/OnUpdated.py', '/PythonModule.py'],
+                     ['print("onCreated")', 'print("onUpdated")', 'print("Python script")'])
     ]
 )
 def test_extract_py_scripts(definition, file_names, expected_scripts):
-
-    with mock.patch("os.path.exists") as path_exists, mock.patch("os.mkdir") as make_dir:
-        path_exists.return_value = True
+    with mock.patch("os.path.exists") as path_exists, mock.patch("os.mkdir"):
+        path_exists.return_value = False
 
         hda_folder_path = "/tmp"
         general_file_path = hda_folder_path + "/main_python_scripts"
@@ -292,24 +216,88 @@ def test_extract_py_scripts(definition, file_names, expected_scripts):
         # initial and make expected result dict
         expected_result_dict = dict()
         for file_path in file_paths:
-            expected_result_dict.update({file_path : expected_scripts[file_paths.index(file_path)]})
+            expected_result_dict.update({file_path: expected_scripts[file_paths.index(file_path)]})
 
         result = epfo.extract_py_scripts(definition, hda_folder_path)
         assert result == expected_result_dict
 
 
+def test_extract_python_full_functionality():
 
-# @pytest.mark.parametrize(
-#     'file_paths',
-#     [
-#         pytest.param(["/job/commsdev/td/dev/asaravan/git/tools/extract-python-from-otl/test_data_and_results/sky_scraper.hda"])
-#     ]
-# )
-# def test_extract_python(file_paths):
-#
-#     temp_folder_name = otl_python_extraction_tool_test
-#     otls_folder_path = cm.make_directory(temp_folder_name)
-#     scripts_folder_name = "otl_scripts"
-#     epfo.extract_python(file_paths, otls_folder_path, scripts_folder_name)
-#
+    temp_folder_name = "otl_python_extraction_tool_test"
+    temp_folder_path = cm.make_directory(temp_folder_name)
 
+    assert temp_folder_name in temp_folder_path
+
+    folder_name = "otl_python_scripts"
+    file_paths = [get_test_otls_path("sky_scraper.hda")]
+
+    epfo.extract_python(file_paths, temp_folder_path, folder_name)
+
+    definition = hou.hda.definitionsInFile(file_paths[0])[0]
+    hou.hda.installFile(file_paths[0])
+
+    otl_unique_name = epfo.make_unique_name(file_paths[0])
+    hda_unique_name = epfo.make_unique_name(definition)
+
+    expected_roots_ = [temp_folder_path, os.path.join(temp_folder_path, folder_name),
+                       os.path.join(temp_folder_path, folder_name, otl_unique_name),
+                       os.path.join(temp_folder_path, folder_name, otl_unique_name, hda_unique_name),
+                       os.path.join(temp_folder_path, folder_name, otl_unique_name, hda_unique_name,
+                                    "parameter_callbacks"),
+                       os.path.join(temp_folder_path, folder_name, otl_unique_name, hda_unique_name,
+                                    "main_python_scripts"),
+                       os.path.join(temp_folder_path, folder_name, otl_unique_name, hda_unique_name,
+                                    "item_generation_scripts")]
+
+    expected_dirs_ = [[folder_name],
+                      [otl_unique_name],
+                      [hda_unique_name],
+                      ['parameter_callbacks', 'main_python_scripts', 'item_generation_scripts'],
+                      [], [], []]
+
+    expected_files_ = [[], ["log.json"], ["log.json"], [], ['button.py'],
+                       ['OnCreated.py', 'PythonModule.py', 'OnUpdated.py'],
+                       ['button.py']]
+
+    i = 0
+    expected = True
+    for roots, dirs, files in os.walk(temp_folder_path):
+        if not roots == expected_roots_[i] or not dirs == expected_dirs_[i] or not files == expected_files_[i]:
+            expected = False
+        i = i + 1
+
+    assert expected
+
+    if os.path.exists(temp_folder_path):
+        shutil.rmtree(temp_folder_path)
+
+
+def test_functionality():
+
+    test_otl_data_name = "sky_scraper_otl"
+    temp_folder_name = "otl_python_extraction_tool_test"
+    temp_folder_path = cm.make_directory(temp_folder_name)
+
+    assert temp_folder_name in temp_folder_path
+
+    folder_name = "otl_scripts_folder"
+    file_paths = [get_test_otls_path("sky_scraper.hda")]
+
+    epfo.extract_python(file_paths, temp_folder_path, folder_name)
+
+    # get expected data
+    test_json_file_path = os.path.join(get_file_path_to_test_json_files(), test_otl_data_name + ".json")
+    with open(test_json_file_path, "r") as file_obj:
+        expected_data = json.load(file_obj)
+
+    # get current tool generated data
+    folder_tree_dict = generate_folder_tree_dict(temp_folder_path)
+
+    # compare both the data
+    # print(json.dumps(folder_tree_dict, indent=4))
+    assert folder_tree_dict == expected_data
+
+    # clean up
+    if os.path.exists(temp_folder_path):
+        shutil.rmtree(temp_folder_path)

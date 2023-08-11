@@ -1,0 +1,1 @@
+print "incorrectly named on-created event script"
