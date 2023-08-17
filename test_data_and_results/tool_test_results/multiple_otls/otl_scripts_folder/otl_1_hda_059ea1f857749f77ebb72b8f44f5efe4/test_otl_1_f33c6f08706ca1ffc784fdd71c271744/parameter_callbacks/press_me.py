@@ -1,1 +1,0 @@
-print list(xrange(10))

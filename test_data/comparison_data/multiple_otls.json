@@ -1,7 +1,8 @@
 {
     "otl_scripts_folder": {
-        "otl_2_hda_b1d985e2c613362923b7f3512b4e27c2": {
-            "test_otl_2_5c2ef27bc3aa9f24019076613d93815a": {
+        "otl_2_hda_9514410fbe6e4e5551660df8081b21ed": {
+            "log.json": {}, 
+            "test_otl_2_428392e9ae07bf4702dda5246b998972": {
                 "main_python_scripts": {
                     "WhatDoWeDoAbout_Forward_Slash_Characters.py": {
                         "file_contents": "# How do you manage the filename?"
@@ -17,10 +18,7 @@
                     }
                 }
             }, 
-            "log.json": {
-                "file_contents": "{\n  \"test_otl_1_27c0e75e07f74a503ba3d7195edf55ff\": \"Object/test_otl_1\", \n  \"test_otl_2_5c2ef27bc3aa9f24019076613d93815a\": \"Object/test_otl_2\"\n}"
-            }, 
-            "test_otl_1_27c0e75e07f74a503ba3d7195edf55ff": {
+            "test_otl_1_65e35c339854ebe1f0f99448598c68a0": {
                 "main_python_scripts": {
                     "PythonModule.py": {
                         "file_contents": "# Should be extracted"
@@ -28,8 +26,9 @@
                 }
             }
         }, 
-        "otl_1_hda_059ea1f857749f77ebb72b8f44f5efe4": {
-            "test_otl_1_f33c6f08706ca1ffc784fdd71c271744": {
+        "log.json": {}, 
+        "otl_1_hda_f023f2a1a494fe5ce48186870a479384": {
+            "test_otl_1_424cfe02561406cfc65ee63f1c9afd5e": {
                 "item_generation_scripts": {
                     "newparameter.py": {
                         "file_contents": "result = []\nfor i in xrange(13):\n    value = chr(2*i+65)+chr(2*i+66)\n    result.append(value)\n    result.append(value)\n\nreturn result"
@@ -52,26 +51,21 @@
                     }
                 }
             }, 
-            "log.json": {
-                "file_contents": "{\n  \"test_otl_1_f33c6f08706ca1ffc784fdd71c271744\": \"Object/test_otl_1\", \n  \"test_otl_1_bb4a8a0abe6d9a189d3d62bdd08adb72\": \"Sop/test_otl_1\", \n  \"test_otl_1::5_0f9824144683b3d9c178de080f5a25f4\": \"Object/test_otl_1::5\"\n}"
-            }, 
-            "test_otl_1_bb4a8a0abe6d9a189d3d62bdd08adb72": {
-                "main_python_scripts": {
-                    "PythonModule.py": {
-                        "file_contents": "# Should be extracted"
-                    }
-                }
-            }, 
-            "test_otl_1::5_0f9824144683b3d9c178de080f5a25f4": {
+            "log.json": {}, 
+            "test_otl_1::5_880dc85fb874d7035a203af029c7b038": {
                 "main_python_scripts": {
                     "PythonModule.py": {
                         "file_contents": "# Should be extracted\n\nfor i in range(3):\n    print i\n    "
                     }
                 }
+            }, 
+            "test_otl_1_3cdc11085cfac7070fa6fa4d8f5ab024": {
+                "main_python_scripts": {
+                    "PythonModule.py": {
+                        "file_contents": "# Should be extracted"
+                    }
+                }
             }
-        }, 
-        "log.json": {
-            "file_contents": "{\n  \"otl_2_hda_b1d985e2c613362923b7f3512b4e27c2\": {\n    \"last_mod_time\": \"2023-08-01 12:06:04.033354\", \n    \"file_path\": \"/job/commsdev/td/dev/asaravan/git/tools/extract-python-from-otl/test_data_and_results/test_otls/otl_b/otl_2.hda\"\n  }, \n  \"otl_1_hda_059ea1f857749f77ebb72b8f44f5efe4\": {\n    \"last_mod_time\": \"2023-08-01 12:05:35.341039\", \n    \"file_path\": \"/job/commsdev/td/dev/asaravan/git/tools/extract-python-from-otl/test_data_and_results/test_otls/otl_a/otl_1.hda\"\n  }\n}"
         }
     }
 }

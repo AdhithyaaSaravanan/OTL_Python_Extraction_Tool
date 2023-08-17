@@ -1,7 +1,0 @@
-/job/commsdev/td/dev/asaravan/git/tools/extract-python-from-otl/test_data_and_results/test_otls/otl_a/otl_1.hda
-
-
-/job/commsdev/td/dev/asaravan/git/tools/extract-python-from-otl/test_data_and_results/test_otls/otl_b/otl_2.hda
-/job/commsdev/td/dev/asaravan/git/tools/extract-python-from-otl/test_data_and_results/otl_unknown/missing_otl_1.hda
-
-

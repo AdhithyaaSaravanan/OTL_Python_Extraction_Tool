@@ -116,6 +116,8 @@ def extract_py_from_otl(file_paths, scripts_folder_path):
             and the file paths, along with the last modified times of
             the respective otlS [value].
     """
+    # Get all the loaded hda files in the current scene, before installing any
+    default_otl_set = set(hou.hda.loadedFiles())
 
     # dict for storing and displaying the otl hash values
     otl_hash_dict = dict()
@@ -125,13 +127,7 @@ def extract_py_from_otl(file_paths, scripts_folder_path):
 
         # check if path is valid
         if not os.path.exists(file_path):
-            # print("file path not valid, continuing to other hdas: {0}\n\n".format(file_path))
-            continue
-
-        try:
-            definitions = hou.hda.definitionsInFile(file_path)
-        except hou.Error:
-            print("Could not load hda file: {0}\n\n".format(file_path))
+            print("file path not valid, continuing to other hdas: {0}\n\n".format(file_path))
             continue
 
         try:
@@ -140,8 +136,15 @@ def extract_py_from_otl(file_paths, scripts_folder_path):
             print("Could not install hda file: {0}\n\n".format(file_path))
             continue
 
+        try:
+            definitions = hou.hda.definitionsInFile(file_path)
+        except hou.Error:
+            print("Could not load hda file: {0}\n\n".format(file_path))
+            continue
+
+
         # Make a folder for each otl
-        otl_unique_name = make_unique_name(file_path)
+        otl_unique_name = make_unique_name(file_path, os.path.basename(file_path))
         otl_folder_path = os.path.join(scripts_folder_path, otl_unique_name)
 
         # checks if a scripts folder was already generated, if it was,
@@ -173,6 +176,17 @@ def extract_py_from_otl(file_paths, scripts_folder_path):
         with open(os.path.join(otl_folder_path, "log.json"), "w") as file_obj:
             file_obj.write(j_hda_hash_dict)
 
+    # Get all the hda files in the current scene after installing all the required ones.
+    current_otl_set = set(hou.hda.loadedFiles())
+
+    # Get the difference, so that only the hda files installed by the tool in
+    # the current houdini session remain
+    otls_installed = current_otl_set - default_otl_set
+
+    # Uninstall all the hda files installed by the tool
+    for file in otls_installed:
+        hou.hda.uninstallFile(file)
+
     return otl_hash_dict
 
 
@@ -191,7 +205,7 @@ def extract_py_from_hda(definitions, otl_folder_path):
 
     # Make a folder for each hda and extract the python files inside
     for definition in definitions:
-        hda_unique_name = make_unique_name(definition)
+        hda_unique_name = make_unique_name(str(definition), str(definition.nodeTypeName()))
         hda_folder_path = os.path.join(otl_folder_path, hda_unique_name)
 
         if not os.path.exists(hda_folder_path):
@@ -207,48 +221,38 @@ def extract_py_from_hda(definitions, otl_folder_path):
     return hda_hash_dict
 
 
-def make_unique_name(var):
+def make_unique_name(file_definition_string, name):
     """
     Makes a unique name with a hash for an hda or an otl.
     
     Input for otl folder name hash = String of file path of otl.
     Input for hda folder name hash = Definition of an hda.
 
-    :param var: Either a str (file path of an otl) or an hda definition.
+    :param file_definition_string: Either a file path of an otl or a str(hda definition).
     :return: A hashed name of an otl or an hda.
     """
 
-    hash_key = get_hash(var)
-
-    # if var is an hda definition
-    if isinstance(var, hou.HDADefinition):
-        name = var.nodeTypeName()
-        unique_name = str(name) + "_" + str(hash_key)
-
-    # if var is a str(file path for an otl)
-    else:
-        otl_name = os.path.basename(var)
-        unique_name = otl_name + "_" + str(hash_key)
-
+    hash_key = get_hash(file_definition_string)
+    unique_name = name + "_" + hash_key
     unique_name = unique_name.replace("/", "_").replace(" ", "_").replace(".", "_")
     return unique_name
 
 
-def get_hash(var):
+def get_hash(file_definition_str):
     """
     Generates a unique hash for the input.
 
     input for otl folder name hash = string of file path of otl
     input for hda folder name hash = definition of hda
 
-    :param var: either a str(file path of an otl) or a hda definition
+    :param file_definition_str: either a str(file path of an otl) or a hda definition
     :return: a hash key
     """
 
     a = hashlib.md5()
-    a.update(str(var))
+    a.update(file_definition_str)
     hash_key = a.hexdigest()
-    return hash_key
+    return str(hash_key)
 
 
 def get_last_modified_time(file_path):

@@ -1,10 +1,9 @@
 {
     "otl_scripts_folder": {
-        "sky_scraper_hda_685e47fbc127d13cbc4b70499c8d4fe5": {
-            "log.json": {
-                "file_contents": "{\n  \"sky_scraper_968dafab53a50970c5e5e71f016a66fe\": \"Object/sky_scraper\"\n}"
-            }, 
-            "sky_scraper_968dafab53a50970c5e5e71f016a66fe": {
+        "log.json": {}, 
+        "sky_scraper_hda_6404d9b9f3ab78b8041360d51c4f4a29": {
+            "log.json": {}, 
+            "sky_scraper_7cacbdb6db14dadf2d6347e60cc4c38b": {
                 "item_generation_scripts": {
                     "button.py": {
                         "file_contents": "result = []\nfor i in xrange(13):\n    value = chr(2*i+65)+chr(2*i+66)\n    result.append(value)\n    result.append(value)\n\nreturn result"
@@ -27,9 +26,6 @@
                     }
                 }
             }
-        }, 
-        "log.json": {
-            "file_contents": "{\n  \"sky_scraper_hda_685e47fbc127d13cbc4b70499c8d4fe5\": {\n    \"last_mod_time\": \"2023-08-04 17:13:18.829934\", \n    \"file_path\": \"/job/commsdev/td/dev/asaravan/git/tools/extract-python-from-otl/test_data_and_results/test_otls/sky_scraper.hda\"\n  }\n}"
         }
     }
 }
