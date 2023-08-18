@@ -8,6 +8,7 @@ import shutil
 import hashlib
 import hou
 
+# TODO: Remove commented code
 # try:
 #     import hou
 # except ImportError:
@@ -38,6 +39,7 @@ def generate_folder_tree_dict(folder_path):
             result[item] = generate_folder_tree_dict(item_path)
     elif os.path.isfile(folder_path):
         # if file is a .json file, ignore
+        # TODO: use str.endswith()
         if ".json" in os.path.basename(folder_path):
             result = dict()
         # if file is a .py file, display the contents
@@ -55,6 +57,16 @@ def get_relative_path(abs_path):
     :param str abs_path: absolute path of otl
     :return: str Relative path.
     """
+    # TODO: This function lacks clarity.
+    #    Problem 1) It looks very generic, but digging into it, it looks
+    #      like it only works with the OTL paths that you have under the "test_otls" folder,
+    #      and yet it's called a very generic name that doesn't mention OTLs at all.
+    #    Problem 2) I would have expected you to use `os.path.relpath` in here somewhere, but you're
+    #      falling back to old habits of calling split and trying to do list slicing to get what
+    #      you're after. This is not a good way to go.
+    #    I would have expected something more like this:
+    #        project_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    #        return os.path.relpath(abs_path, project_dir)
 
     # Go back 3 directories to get the project name
     project_dir = os.path.dirname(os.path.dirname(os.path.dirname(abs_path)))
@@ -69,6 +81,7 @@ def get_relative_path(abs_path):
     # os.path.join() to join both the strings.
     relative_path = os.path.join(project_dir, str(split_path_list[1][1:]))
 
+    # TODO: If it's a path relative to the project_dir, this should fail every time, no?
     assert project_dir in relative_path
 
     return relative_path
@@ -111,6 +124,8 @@ def hash_side_effect(file_definition_str):
         """
 
     # if file_definition_str is an HDA definition
+    # TODO: This seems like a fragile test and it has no explanation in the comment.
+    #  Where is the number "18" coming from?
     if file_definition_str[:18] == "<hou.HDADefinition":
         file_definition_str = generate_relative_hda_definition_string(file_definition_str)
     # if file_definition_str is an OTL file path
@@ -129,6 +144,10 @@ def get_test_data_dir():
 
     :return: str test_data_dir: ~/extract-python-from-otl/test_data
     """
+    # TODO: There are two places in your code that rely on doing "os.path.dirname(os.path.dirname())"
+    #    You should do this in one place. E.g. in a function called something like "get_tool_project_path"
+    #    so that the code for this function becomes simply:
+    #        return os.path.join(get_tool_project_path(), "test_data")
 
     script_path = os.path.abspath(__file__)
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(script_path)))
@@ -143,10 +162,15 @@ def get_test_otls_paths(string):
     :param str string: sky_scraper.hda (or) otl_list.txt
     :return: list otl file path(s)
     """
+    # TODO: As I said elsewhere, you're potentially passing in two different things, a) an OTL name or b) text file.
+    #    It doesn't lead to clean code because the function prototype is not clear as to what it's expecting (regardless
+    #    of what the docstring says). Either have two different arguments, or write two different functions.
 
     file_path = os.path.join(get_test_data_dir(), "test_otls", string)
 
     # if it's a text file with a list of otl file paths.
+    # TODO: Use str.endswith()
+    # TODO: Don't use `string` as a variable name, use something more meaningful
     if ".txt" in string:
         # access individual paths from .txt file
         with open(file_path, 'r') as file_obj:
@@ -179,6 +203,7 @@ def is_valid_datetime(input_str):
     """
     datetime_pattern = re.compile(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+$')
     match = datetime_pattern.match(input_str)
+    # TODO: Alternatively, use match is not None (generally preferred)
     return bool(match)
 
 
@@ -192,6 +217,8 @@ def assert_json_file(file_path):
 
     dir_contents = os.listdir(file_path)
     for file_or_dir in dir_contents:
+        # TODO: You've used `os.path.join(file_path, file_or_dir)` multiple times.
+        #  You should assign it to a variable and reuse it in each situation
         if os.path.isfile(os.path.join(file_path, file_or_dir)) and file_or_dir == "log.json":
             with open(os.path.join(file_path, file_or_dir), "r") as file_obj:
                 json_data = json.load(file_obj)
@@ -484,6 +511,7 @@ def test_functionality(test_data):
         epfo.extract_python(file_paths, temp_folder_path, folder_name)
 
     # If input is a txt file, name the .json file "multiple_otls"
+    # TODO: Use str.endswith()
     if ".txt" in test_data:
         test_otl_data_name = "multiple_otls.json"
     # If it's a single otl, name it "sky_scraper_otl"
