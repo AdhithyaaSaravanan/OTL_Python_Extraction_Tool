@@ -1,9 +1,10 @@
-try:
-    import hou
-except ImportError:
-    # This should only happen when not running under Hython during testing
-    hou = None
+# try:
+#     import hou
+# except ImportError:
+#     # This should only happen when not running under Hython during testing
+#     hou = None
 
+import hou
 import argparse
 import shutil
 import os
@@ -197,7 +198,7 @@ def extract_py_from_hda(definitions, otl_folder_path):
     :param list definitions: List of all the hda definitions inside an otl.
     :param str otl_folder_path: Parent directory of the otl-folder.
     :return: hda_hash_dict - a dictionary of all the unique hda names [key]
-            and the file paths [value].
+            and their name and context [value].
     """
 
     # dict for storing and displaying the hda hash values
@@ -224,11 +225,9 @@ def extract_py_from_hda(definitions, otl_folder_path):
 def make_unique_name(file_definition_string, name):
     """
     Makes a unique name with a hash for an hda or an otl.
-    
-    Input for otl folder name hash = String of file path of otl.
-    Input for hda folder name hash = Definition of an hda.
 
-    :param file_definition_string: Either a file path of an otl or a str(hda definition).
+    :param str name: otl or hda name
+    :param str file_definition_string: A file path of an otl or an hda.
     :return: A hashed name of an otl or an hda.
     """
 
@@ -242,10 +241,10 @@ def get_hash(file_definition_str):
     """
     Generates a unique hash for the input.
 
-    input for otl folder name hash = string of file path of otl
-    input for hda folder name hash = definition of hda
+    input for otl folder name hash = file path of otl
+    input for hda folder name hash = str(definition of hda)
 
-    :param file_definition_str: either a str(file path of an otl) or a hda definition
+    :param str file_definition_str: A str(hda definition) of an otl file path
     :return: a hash key
     """
 
@@ -272,11 +271,8 @@ def extract_py_and_write(definition, hda_folder_path):
     """
     Extracts all the python scripts inside an hda and writes it to a file on disk.
 
-    (input for otl folder name hash = string of file path of otl
-    input for hda folder name hash = definition of hda)
-
-    :param definition: hda file definition.
-    :param hda_folder_path: Directory of the generated hda folder.
+    :param <hou.HDADefinition> definition: hda file definition.
+    :param str hda_folder_path: Directory of the generated hda folder.
     """
 
     # Extract python scripts in the scripts tab.
@@ -284,13 +280,13 @@ def extract_py_and_write(definition, hda_folder_path):
     write_result_to_disk(result_1)
 
     ptg = definition.parmTemplateGroup()
-    pt = ptg.parmTemplates()
+    parm_templates = ptg.parmTemplates()
 
     # exclude hdas with no parameters
-    if len(pt) != 0:
+    if len(parm_templates) != 0:
 
         # iterate through each parameter
-        for parm_template in pt:
+        for parm_template in parm_templates:
 
             # Extract python scripts in the item generation tab inside certain parameters.
             result_2 = extract_item_generation_scripts(hda_folder_path, parm_template)
@@ -314,18 +310,19 @@ def extract_parameter_callbacks(hda_folder_path, parm_template):
     """
     Extracts the python scripts inside the parameter callbacks (if any).
 
-    :param str hda_folder_path: Directory of the hda file.
-    :param parm_template: hda parameter template.
-    :return dict result: dict of all the python scripts
+    :param str hda_folder_path: Directory of the generated hda folder.
+    :param <hou.ParmTemplate> parm_template: hda parameter template.
+    :return dict result: dict containing all the callback python scripts.
     """
 
     result = {}
+
+    parameter_callback_folder = os.path.join(hda_folder_path, "parameter_callbacks")
 
     # check if a callback script exists, and if it's in python
     if parm_template.scriptCallbackLanguage() == hou.scriptLanguage.Python and len(parm_template.scriptCallback()) > 0:
 
         # parameter callback folder
-        parameter_callback_folder = os.path.join(hda_folder_path, "parameter_callbacks")
         if not os.path.exists(parameter_callback_folder):
             os.mkdir(parameter_callback_folder)
 
@@ -338,27 +335,30 @@ def extract_parameter_callbacks(hda_folder_path, parm_template):
     return result
 
 
-def extract_item_generation_scripts(hda_folder_path, parm):
+def extract_item_generation_scripts(hda_folder_path, parm_template):
     """
     Extracts the item generation scripts inside certain the parameters (if any).
 
     :param hda_folder_path: Directory of the generated hda folder.
-    :param parm: hda parameter.
+    :param <hou.ParmTemplate> parm_template: hda parameter template.
+    :return dict result: dict containing all the item generation python scripts.
     """
 
     result = {}
 
-    # check if an item generation script exists, and if it's in python
-    if isinstance(parm, hou.StringParmTemplate) \
-            or isinstance(parm, hou.MenuParmTemplate) \
-            or isinstance(parm, hou.IntParmTemplate):
-        if parm.itemGeneratorScriptLanguage() == hou.scriptLanguage.Python:
-            if len(parm.itemGeneratorScript()) > 0:
-                item_generation_script = parm.itemGeneratorScript()
-                file_name = parm.name()
+    # name item generation scripts folder
+    item_generation_scripts_folder = os.path.join(hda_folder_path, "item_generation_scripts")
 
-                # item generation scripts folder
-                item_generation_scripts_folder = os.path.join(hda_folder_path, "item_generation_scripts")
+    # check if an item generation script exists, and if it's in python
+    if isinstance(parm_template, hou.StringParmTemplate) \
+            or isinstance(parm_template, hou.MenuParmTemplate) \
+            or isinstance(parm_template, hou.IntParmTemplate):
+        if parm_template.itemGeneratorScriptLanguage() == hou.scriptLanguage.Python:
+            if len(parm_template.itemGeneratorScript()) > 0:
+                item_generation_script = parm_template.itemGeneratorScript()
+                file_name = parm_template.name()
+
+                # create item generation scripts folder
                 if not os.path.exists(item_generation_scripts_folder):
                     os.mkdir(item_generation_scripts_folder)
 
@@ -373,16 +373,15 @@ def extract_py_scripts(definition, hda_folder_path):
     """
     Extracts the python scripts inside the scripts tab of the hda file (if any).
 
-    :param definition: hda file definition.
-    :param hda_folder_path: Directory of the generated hda folder.
+    :param <hou.HDADefinition> definition: hda file definition.
+    :param str hda_folder_path: Directory of the generated hda folder.
+    :return dict result: dict containing all the main python scripts.
     """
 
     result = {}
 
-    # making a folder for the main python scripts
+    # folder name for the main python scripts
     main_py_scripts_folder = os.path.join(hda_folder_path, "main_python_scripts")
-    if not os.path.exists(main_py_scripts_folder):
-        os.mkdir(main_py_scripts_folder)
 
     # pull out the python scripts in the scripts tab
     definition_sections = definition.sections()
@@ -399,12 +398,15 @@ def extract_py_scripts(definition, hda_folder_path):
             # check and rectify the file name for any potential bad names
             file_name = file_name.replace('/', '_').replace('.', '_').replace(' ', '_')
 
+            # making a folder for the main python scripts
+            if not os.path.exists(main_py_scripts_folder):
+                os.mkdir(main_py_scripts_folder)
+
             script_file_path = os.path.join(main_py_scripts_folder, file_name + ".py")
 
             result[script_file_path] = py_script
 
     return result
-
 
 
 if __name__ == '__main__':

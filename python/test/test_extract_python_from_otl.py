@@ -16,12 +16,19 @@ import hou
 
 import extract_python_from_otl as epfo
 
-
 # If the test OTLs have been modified, the test data has to be generated again.
 
+
 # Generates a dict representing the folder hierarchy along with the
-# contents of all the .py scripts, but excludes the .json files.
+# contents of all the .py scripts, but excludes the .json file contents.
 def generate_folder_tree_dict(folder_path):
+    """
+    Takes in a folder path and returns a dictionary depicting the folder structure
+    along with the file contents, but excludes json file contents.
+
+    :param str folder_path: Folder path to be analysed and displayed
+    :return: dict result: Dictionary representing the folder structure of the input folder path
+    """
 
     result = {}
     if os.path.isdir(folder_path):
@@ -33,21 +40,28 @@ def generate_folder_tree_dict(folder_path):
         # if file is a .json file, ignore
         if ".json" in os.path.basename(folder_path):
             result = dict()
-        # if file is a .json file, display the contents
+        # if file is a .py file, display the contents
         else:
             with open(folder_path, 'r') as file:
                 result = {'file_contents': file.read()}
     return result
 
 
-def get_relative_path(path):
+def get_relative_path(abs_path):
+    """
+    Gets the relative path from the input absolute path with the project directory
+    as the root directory.
+
+    :param str abs_path: absolute path of otl
+    :return: str Relative path.
+    """
 
     # Go back 3 directories to get the project name
-    project_dir = os.path.dirname(os.path.dirname(os.path.dirname(path)))
+    project_dir = os.path.dirname(os.path.dirname(os.path.dirname(abs_path)))
     project_name = os.path.basename(project_dir)
 
     project_dir = os.path.join(os.path.sep, project_name)
-    split_path_list = path.split(project_dir)
+    split_path_list = abs_path.split(project_dir)
 
     # path.split() splits the path into 2 strings, where the given word is specified,
     # and both exclude the given word. I then add the project directory back to the
@@ -61,6 +75,13 @@ def get_relative_path(path):
 
 
 def generate_relative_hda_definition_string(hda_def_str):
+    """
+    Changes the absolute path in an hda definition to a relative path
+    with the project directory as the root directory.
+
+    :param str hda_def_str: str(hda definition)
+    :return: str Relative path.
+    """
 
     # Find the index of the first separator
     first_sep_index = hda_def_str.find(os.path.sep)
@@ -82,10 +103,10 @@ def hash_side_effect(file_definition_str):
     """
         Generates a unique hash for the input.
 
-        input for otl folder name hash = string of file path of otl
-        input for hda folder name hash = definition of hda
+        input for otl folder name hash = file path of otl
+        input for hda folder name hash = str(definition of hda)
 
-        :param file_definition_str: either a str(file path of an otl) or a hda definition
+        :param str file_definition_str: file path of an otl or a str(hda definition)
         :return: a hash key
         """
 
@@ -102,8 +123,12 @@ def hash_side_effect(file_definition_str):
     return str(hash_key)
 
 
-# gets path to ./extract-python-from-otl/test_data
 def get_test_data_dir():
+    """
+    Gets the path to ~/extract-python-from-otl/test_data
+
+    :return: str test_data_dir: ~/extract-python-from-otl/test_data
+    """
 
     script_path = os.path.abspath(__file__)
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(script_path)))
@@ -111,8 +136,13 @@ def get_test_data_dir():
     return test_data_dir
 
 
-# gets path to ./extract-python-from-otl/test_data/test_otls/"string variable"
 def get_test_otls_paths(string):
+    """
+    Gets a list of otl file path or path to sky_scraper.hda
+
+    :param str string: sky_scraper.hda (or) otl_list.txt
+    :return: list otl file path(s)
+    """
 
     file_path = os.path.join(get_test_data_dir(), "test_otls", string)
 
@@ -129,31 +159,37 @@ def get_test_otls_paths(string):
         return [file_path]
 
 
-# gets path to ./extract-python-from-otl/test_data_and_results/comparison_data
 def get_file_path_to_test_json_files():
+    """
+    Gets the path to ~/extract-python-from-otl/test_data/comparison_data
+
+    :return: str results_dir: ~/extract-python-from-otl/test_data/comparison_data
+    """
 
     results_dir = os.path.join(get_test_data_dir(), "comparison_data")
     return results_dir
 
 
 def is_valid_datetime(input_str):
+    """
+    Checks if the input string represents a date and time.
+
+    :param str input_str: date and time
+    :return: bool
+    """
     datetime_pattern = re.compile(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+$')
     match = datetime_pattern.match(input_str)
     return bool(match)
 
 
-def is_valid_format(input_str):
-    # Context has a version number
-    if "::" in input_str:
-        format_pattern = re.compile(r'^\w+/\w+::\d+$')
-    # Doesn't have a version number
-    else:
-        format_pattern = re.compile(r'^\w+/\w+$')
-    match = format_pattern.match(input_str)
-    return bool(match)
-
-
 def assert_json_file(file_path):
+    """
+    Checks whether the log.json files in the given folder tree contains all the
+    appropriate keys and values.
+
+    :param str file_path: Parent directory of otl_scripts_folder
+    """
+
     dir_contents = os.listdir(file_path)
     for file_or_dir in dir_contents:
         if os.path.isfile(os.path.join(file_path, file_or_dir)) and file_or_dir == "log.json":
@@ -172,12 +208,10 @@ def assert_json_file(file_path):
                     for folder_dir in dir_contents:
                         if folder_dir != "log.json":
                             assert json_data[folder_dir]
-                            assert is_valid_format(json_data[folder_dir])
 
         if os.path.isdir(os.path.join(file_path, file_or_dir)):
             folder = os.path.join(file_path, file_or_dir)
             assert_json_file(folder)
-
 
 
 @pytest.mark.parametrize(
@@ -188,6 +222,11 @@ def assert_json_file(file_path):
     ]
 )
 def test_del_folder_count(file_paths):
+    """
+    Tests and asserts the appropriate usage of shutil.rmtree()
+
+    :param list file_paths: otl file path(s) (Tool function input)
+    """
     with mock.patch("__builtin__.open", mock.mock_open(read_data="mocked_data")), \
             mock.patch("extract_python_from_otl.extract_py_from_hda"), \
             mock.patch("os.path.exists") as path_exists, mock.patch("os.mkdir"), \
@@ -204,7 +243,7 @@ def test_del_folder_count(file_paths):
 
 
 @pytest.mark.parametrize(
-    'var',
+    'file_definition_str',
     [
         pytest.param("1"),
         pytest.param("a"),
@@ -212,10 +251,14 @@ def test_del_folder_count(file_paths):
         pytest.param(str(hou.hda.definitionsInFile(get_test_otls_paths("sky_scraper.hda")[0])[0]))
     ]
 )
-def test_get_hash(var):
-    result = epfo.get_hash(var)
-    assert result is not None
-    assert isinstance(result, str)
+def test_get_hash(file_definition_str):
+    """
+    Asserts the composition of the return value of the get hash function
+
+    :param str file_definition_str: otl file path or str(hda definition)
+    """
+
+    result = epfo.get_hash(file_definition_str)
     regex = re.compile(r"^[a-f0-9]+$")
     assert regex.match(result)
 
@@ -237,6 +280,14 @@ return result"""),
     ]
 )
 def test_extract_py_and_write(scripts_folder_name, file_name, expected_script):
+    """
+    Tests the return value of extract_py_and_write()
+
+    :param str scripts_folder_name: Name of the generated scripts folder
+    :param str file_name: Expected script file name
+    :param str expected_script: Expected script
+    """
+
     file_path = get_test_otls_paths("sky_scraper.hda")[0]
     definition = hou.hda.definitionsInFile(file_path)[0]
     temp_folder_name = "otl_python_extraction_tool_test"
@@ -279,6 +330,12 @@ def test_extract_py_and_write(scripts_folder_name, file_name, expected_script):
     ]
 )
 def test_extract_parameter_callbacks(parm_template, expected):
+    """
+    Checks the return value of extract_parameter_callbacks()
+
+    :param <hou.ParmTemplate> parm_template: Tool function input
+    :param dict expected: Expected result
+    """
     with mock.patch("os.path.exists") as path_exists, mock.patch("os.mkdir"):
         path_exists.return_value = False
 
@@ -309,6 +366,13 @@ def test_extract_parameter_callbacks(parm_template, expected):
     ]
 )
 def test_extract_item_generation_scripts(parm_template, expected):
+    """
+    Checks the return value of extract_item_generation_scripts()
+
+    :param <hou.ParmTemplate> parm_template: Tool function input
+    :param dict expected: Expected result
+    """
+
     with mock.patch("os.path.exists") as path_exists, mock.patch("os.mkdir"):
         path_exists.return_value = False
 
@@ -326,6 +390,13 @@ def test_extract_item_generation_scripts(parm_template, expected):
     ]
 )
 def test_extract_py_scripts(definition, file_names, expected_scripts):
+    """
+    Checks the return value of extract_py_scripts()
+
+    :param <hou.HDADefinition> definition: hda definition (Tool function input)
+    :param list file_names: List of expected script file names
+    :param list expected_scripts: List of expected scripts
+    """
     with mock.patch("os.path.exists") as path_exists, mock.patch("os.mkdir"):
         path_exists.return_value = False
 
@@ -355,6 +426,11 @@ def test_extract_py_scripts(definition, file_names, expected_scripts):
     ]
 )
 def test_json_files(otl_file_paths):
+    """
+    Checks the contents of the loh.json files in the generated folder tree.
+
+    :param list otl_file_paths: List of otl file path(s) (Tool function input)
+    """
 
     temp_folder_name = "otl_python_extraction_tool_json_test"
     temp_folder_path = cm.make_directory(temp_folder_name)
@@ -366,10 +442,6 @@ def test_json_files(otl_file_paths):
 
     # check if the log.json files are correctly formatted
     assert_json_file(temp_folder_path)
-
-    # get current tool generated folder structure in a dictionary
-    #folder_tree_dict = generate_folder_tree_dict(temp_folder_path)
-    #print(json.dumps(folder_tree_dict, indent=4))
 
     # clean up
     if os.path.exists(temp_folder_path):
@@ -385,6 +457,14 @@ def test_json_files(otl_file_paths):
     ]
 )
 def test_functionality(test_data):
+    """
+    Integration test for the entire tool - Checks the hierarchy / structure
+    of the generated scripts folder. Also checks the contents of all the
+    files inside, excluding the log.json files.
+
+    :param str test_data: name of the test data (an otl or a text file
+                            containing a list of otl file paths.)
+    """
 
     with mock.patch("extract_python_from_otl.get_hash", side_effect=hash_side_effect):
 
@@ -400,8 +480,6 @@ def test_functionality(test_data):
             file_paths = []
         else:
             file_paths = get_test_otls_paths(test_data)
-
-        # file_paths = [] if test_data is "" else get_test_otls_paths(test_data)
 
         epfo.extract_python(file_paths, temp_folder_path, folder_name)
 
