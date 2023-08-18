@@ -29,7 +29,7 @@ def generate_test_data(otl_data):
         # If input is a txt file, name the .json file "multiple_otls"
         if ".txt" in otl_data:
             data_name = "multiple_otls.json"
-        # If it's a single otl, name it "sky_scraper_otl"
+        # If it's a single otl, name the .json file "sky_scraper_otl"
         else:
             data_name = "sky_scraper_otl.json"
 

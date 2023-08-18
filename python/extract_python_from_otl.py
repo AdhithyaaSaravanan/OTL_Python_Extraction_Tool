@@ -216,8 +216,13 @@ def extract_py_from_hda(definitions, otl_folder_path):
         extract_py_and_write(definition, hda_folder_path)
 
         # append to the hda hash dictionary
+        try:
+            hda_node_type_and_context = definition.nodeTypeCategory().name() + "/" + definition.nodeTypeName()
+        except hou.Error:
+            hda_node_type_and_context = str(hou.Error)
+
         hda_hash_dict[
-            hda_unique_name] = definition.nodeTypeCategory().name() + "/" + definition.nodeTypeName()
+            hda_unique_name] = hda_node_type_and_context
 
     return hda_hash_dict
 
@@ -279,8 +284,12 @@ def extract_py_and_write(definition, hda_folder_path):
     result_1 = extract_py_scripts(definition, hda_folder_path)
     write_result_to_disk(result_1)
 
-    ptg = definition.parmTemplateGroup()
-    parm_templates = ptg.parmTemplates()
+    try:
+        ptg = definition.parmTemplateGroup()
+        parm_templates = ptg.parmTemplates()
+    except hou.Error:
+        print("\n\nCould not access parm templates of: {0}\n\n".format(str(definition)))
+        return
 
     # exclude hdas with no parameters
     if len(parm_templates) != 0:
@@ -298,12 +307,13 @@ def extract_py_and_write(definition, hda_folder_path):
 
 
 def write_result_to_disk(result):
-
-    for filename, data in result.items():
-        # check if file exists, if it does, don't update it
-        if not os.path.exists(filename):
-            with open(filename, 'w') as file_obj:
-                file_obj.write(data)
+    # Checks if the input dictionary has valid data
+    if result is not dict():
+        for filename, data in result.items():
+            # check if file exists, if it does, don't update it
+            if not os.path.exists(filename):
+                with open(filename, 'w') as file_obj:
+                    file_obj.write(data)
 
 
 def extract_parameter_callbacks(hda_folder_path, parm_template):
@@ -383,9 +393,16 @@ def extract_py_scripts(definition, hda_folder_path):
     # folder name for the main python scripts
     main_py_scripts_folder = os.path.join(hda_folder_path, "main_python_scripts")
 
-    # pull out the python scripts in the scripts tab
-    definition_sections = definition.sections()
-    efo = definition.extraFileOptions()
+    try:
+        # pull out the python scripts in the scripts tab
+        definition_sections = definition.sections()
+        efo = definition.extraFileOptions()
+    except hou.Error:
+        print("\n\nCould not access hda definition sections: {0}\n\n".format(str(definition)))
+        # error_dict = {"hou Error" : hou.Error.exceptionTypeName(),
+        #               "Error message" : hou.Error.instanceMessage()}
+        # print(json.dumps(error_dict, indent=4))
+        return dict()
 
     # iterate through each section
     for section in definition_sections:
