@@ -1,31 +1,31 @@
 {
-    "otl_scripts_folder": {
-        "log.json": {}, 
-        "sky_scraper_hda_6404d9b9f3ab78b8041360d51c4f4a29": {
-            "log.json": {}, 
-            "sky_scraper_7cacbdb6db14dadf2d6347e60cc4c38b": {
-                "item_generation_scripts": {
-                    "button.py": {
-                        "file_contents": "result = []\nfor i in xrange(13):\n    value = chr(2*i+65)+chr(2*i+66)\n    result.append(value)\n    result.append(value)\n\nreturn result"
-                    }
-                }, 
-                "main_python_scripts": {
-                    "OnCreated.py": {
-                        "file_contents": "print(\"onCreated\")"
-                    }, 
-                    "PythonModule.py": {
-                        "file_contents": "print(\"Python script\")"
-                    }, 
-                    "OnUpdated.py": {
-                        "file_contents": "print(\"onUpdated\")"
-                    }
-                }, 
-                "parameter_callbacks": {
-                    "button.py": {
-                        "file_contents": "print(\"callback\")"
-                    }
-                }
-            }
+  "otl_scripts_folder": {
+    "sky_scraper_hda_4d0aed6c62d0ab0685c1193894b4b876": {
+      "log.json": {}, 
+      "sky_scraper_a46b34ff129c3c78d4b75fa66b748f26": {
+        "item_generation_scripts": {
+          "button.py": {
+            "file_contents": "result = []\nfor i in xrange(13):\n    value = chr(2*i+65)+chr(2*i+66)\n    result.append(value)\n    result.append(value)\n\nreturn result"
+          }
+        }, 
+        "main_python_scripts": {
+          "OnCreated.py": {
+            "file_contents": "print(\"onCreated\")"
+          }, 
+          "PythonModule.py": {
+            "file_contents": "print(\"Python script\")"
+          }, 
+          "OnUpdated.py": {
+            "file_contents": "print(\"onUpdated\")"
+          }
+        }, 
+        "parameter_callbacks": {
+          "button.py": {
+            "file_contents": "print(\"callback\")"
+          }
         }
-    }
+      }
+    }, 
+    "log.json": {}
+  }
 }

@@ -9,8 +9,21 @@ import extract_python_from_otl as epfo
 # If the test OTLs have been modified, the test data has to be generated again.
 
 
-def generate_test_data(otl_data):
-    # TODO: Missing docstring
+def main():
+    # Generates test data for input "otl_list.txt"
+    generate_test_data(tepfo.get_test_otls_paths(), "multiple_otls.json")
+    # Generates test data for input "sky_scraper.hda"
+    generate_test_data(tepfo.get_sky_scraper_otl_path(), "sky_scraper_otl.json")
+
+
+def generate_test_data(otl_file_paths, comparison_data_file_name):
+    """
+    Generates test data in the "comparison data" folder so that it can be used
+    for data comparison while running the integration test.
+
+    :param otl_file_paths: list Test data otl file paths
+    :param comparison_data_file_name: str comparison data json file name
+    """
 
     with mock.patch("extract_python_from_otl.get_hash", side_effect=tepfo.hash_side_effect):
 
@@ -20,36 +33,20 @@ def generate_test_data(otl_data):
         assert temp_folder_name in temp_folder_path
 
         folder_name = "otl_scripts_folder"
-        file_paths = tepfo.get_test_otls_paths(otl_data)
+        epfo.extract_python(otl_file_paths, temp_folder_path, folder_name)
 
-        epfo.extract_python(file_paths, temp_folder_path, folder_name)
+    file_path_to_output_data = tepfo.get_comparison_data_dir()
+    tool_test_results_file_path = temp_folder_path
 
-        file_path_to_output_data = tepfo.get_file_path_to_test_json_files()
-        tool_test_results_file_path = temp_folder_path
+    folder_tree_dict = tepfo.generate_folder_tree_dict(tool_test_results_file_path)
 
-        # If input is a txt file, name the .json file "multiple_otls"
-        # TODO: Should this be `otl_data.endswith(".txt")`?
-        if ".txt" in otl_data:
-            data_name = "multiple_otls.json"
-        # If it's a single otl, name the .json file "sky_scraper_otl"
-        else:
-            # TODO: Why is this name being hard coded? You should be driving this from a function argument
-            data_name = "sky_scraper_otl.json"
+    with open(os.path.join(file_path_to_output_data, comparison_data_file_name), "w") as file_obj:
+        json.dump(folder_tree_dict, file_obj, indent=2)
 
-        folder_tree_dict = tepfo.generate_folder_tree_dict(tool_test_results_file_path)
+    # clean up
+    if os.path.exists(temp_folder_path):
+        shutil.rmtree(temp_folder_path)
 
-        # TODO: Use `json.dump` instead of using a string intermediary
-        j_test_result_info = json.dumps(folder_tree_dict, indent=4)
-        with open(os.path.join(file_path_to_output_data, data_name), "w") as file_obj:
-            file_obj.write(j_test_result_info)
 
-        # clean up
-        if os.path.exists(temp_folder_path):
-            shutil.rmtree(temp_folder_path)
-
-# TODO: You should wrap these two lines in a "if __name__ == '__main__':" so that it doesn't get
-#    executed if it gets imported
-# TODO: This is a bit weird being able to pass an HDA or a text file to the same function like this. Consider
-#    either using separate arguments (e.g. an HDA argument and a text file argument), or use two different functions.
-generate_test_data("sky_scraper.hda")
-generate_test_data("otl_list.txt")
+if __name__ == '__main__':
+    main()

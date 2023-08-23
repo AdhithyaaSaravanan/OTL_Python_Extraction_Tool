@@ -7,21 +7,11 @@ import commslib.temp as cm
 import shutil
 import hashlib
 import hou
-
-# TODO: Remove commented code
-# try:
-#     import hou
-# except ImportError:
-#     # This should only happen when not running under Hython during testing
-#     hou = None
-
 import extract_python_from_otl as epfo
 
 # If the test OTLs have been modified, the test data has to be generated again.
 
 
-# Generates a dict representing the folder hierarchy along with the
-# contents of all the .py scripts, but excludes the .json file contents.
 def generate_folder_tree_dict(folder_path):
     """
     Takes in a folder path and returns a dictionary depicting the folder structure
@@ -39,8 +29,7 @@ def generate_folder_tree_dict(folder_path):
             result[item] = generate_folder_tree_dict(item_path)
     elif os.path.isfile(folder_path):
         # if file is a .json file, ignore
-        # TODO: use str.endswith()
-        if ".json" in os.path.basename(folder_path):
+        if os.path.basename(folder_path).endswith(".json"):
             result = dict()
         # if file is a .py file, display the contents
         else:
@@ -49,7 +38,15 @@ def generate_folder_tree_dict(folder_path):
     return result
 
 
-def get_relative_path(abs_path):
+def get_tool_project_dir():
+    """
+    Gets the project directory of the tool
+    :return: str project directory of the tool
+    """
+    return os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+
+
+def get_relative_path_from_project_dir(abs_path):
     """
     Gets the relative path from the input absolute path with the project directory
     as the root directory.
@@ -57,34 +54,7 @@ def get_relative_path(abs_path):
     :param str abs_path: absolute path of otl
     :return: str Relative path.
     """
-    # TODO: This function lacks clarity.
-    #    Problem 1) It looks very generic, but digging into it, it looks
-    #      like it only works with the OTL paths that you have under the "test_otls" folder,
-    #      and yet it's called a very generic name that doesn't mention OTLs at all.
-    #    Problem 2) I would have expected you to use `os.path.relpath` in here somewhere, but you're
-    #      falling back to old habits of calling split and trying to do list slicing to get what
-    #      you're after. This is not a good way to go.
-    #    I would have expected something more like this:
-    #        project_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    #        return os.path.relpath(abs_path, project_dir)
-
-    # Go back 3 directories to get the project name
-    project_dir = os.path.dirname(os.path.dirname(os.path.dirname(abs_path)))
-    project_name = os.path.basename(project_dir)
-
-    project_dir = os.path.join(os.path.sep, project_name)
-    split_path_list = abs_path.split(project_dir)
-
-    # path.split() splits the path into 2 strings, where the given word is specified,
-    # and both exclude the given word. I then add the project directory back to the
-    # 2nd string, while also removing the 1st slash of the string, to enable
-    # os.path.join() to join both the strings.
-    relative_path = os.path.join(project_dir, str(split_path_list[1][1:]))
-
-    # TODO: If it's a path relative to the project_dir, this should fail every time, no?
-    assert project_dir in relative_path
-
-    return relative_path
+    return os.path.relpath(abs_path, os.path.dirname(get_tool_project_dir()))
 
 
 def generate_relative_hda_definition_string(hda_def_str):
@@ -108,7 +78,7 @@ def generate_relative_hda_definition_string(hda_def_str):
 
     hda_def_path = hda_def_path[:-1]
 
-    new_hda_def_str = hda_def_path + get_relative_path(abs_path)
+    new_hda_def_str = hda_def_path + get_relative_path_from_project_dir(abs_path)
     return new_hda_def_str
 
 
@@ -124,13 +94,11 @@ def hash_side_effect(file_definition_str):
         """
 
     # if file_definition_str is an HDA definition
-    # TODO: This seems like a fragile test and it has no explanation in the comment.
-    #  Where is the number "18" coming from?
-    if file_definition_str[:18] == "<hou.HDADefinition":
+    if file_definition_str.startswith("<hou.HDADefinition"):
         file_definition_str = generate_relative_hda_definition_string(file_definition_str)
     # if file_definition_str is an OTL file path
     else:
-        file_definition_str = get_relative_path(file_definition_str)
+        file_definition_str = get_relative_path_from_project_dir(file_definition_str)
 
     a = hashlib.md5()
     a.update(file_definition_str)
@@ -141,57 +109,34 @@ def hash_side_effect(file_definition_str):
 def get_test_data_dir():
     """
     Gets the path to ~/extract-python-from-otl/test_data
-
     :return: str test_data_dir: ~/extract-python-from-otl/test_data
     """
-    # TODO: There are two places in your code that rely on doing "os.path.dirname(os.path.dirname())"
-    #    You should do this in one place. E.g. in a function called something like "get_tool_project_path"
-    #    so that the code for this function becomes simply:
-    #        return os.path.join(get_tool_project_path(), "test_data")
-
-    script_path = os.path.abspath(__file__)
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(script_path)))
-    test_data_dir = os.path.join(base_dir, "test_data")
-    return test_data_dir
+    return os.path.join(get_tool_project_dir(), "test_data")
 
 
-def get_test_otls_paths(string):
+def get_sky_scraper_otl_path():
     """
-    Gets a list of otl file path or path to sky_scraper.hda
-
-    :param str string: sky_scraper.hda (or) otl_list.txt
-    :return: list otl file path(s)
+    Gets the path to ~/extract-python-from-otl/test_data/test_otls/sky_scraper.hda
+    :return: str test_data_dir: ~/extract-python-from-otl/test_data/test_otls/sky_scraper.hda
     """
-    # TODO: As I said elsewhere, you're potentially passing in two different things, a) an OTL name or b) text file.
-    #    It doesn't lead to clean code because the function prototype is not clear as to what it's expecting (regardless
-    #    of what the docstring says). Either have two different arguments, or write two different functions.
-
-    file_path = os.path.join(get_test_data_dir(), "test_otls", string)
-
-    # if it's a text file with a list of otl file paths.
-    # TODO: Use str.endswith()
-    # TODO: Don't use `string` as a variable name, use something more meaningful
-    if ".txt" in string:
-        # access individual paths from .txt file
-        with open(file_path, 'r') as file_obj:
-            file_contents = file_obj.read()
-            otl_file_paths = file_contents.split()
-            return otl_file_paths
-
-    # If it's just a single otl file path
-    else:
-        return [file_path]
+    return os.path.join(get_test_data_dir(), os.path.join("test_otls", "sky_scraper.hda"))
 
 
-def get_file_path_to_test_json_files():
+def get_test_otls_paths():
+
+    file_path = os.path.join(get_test_data_dir(), os.path.join("test_otls", "otl_list.txt"))
+    with open(file_path, 'r') as file_obj:
+        file_contents = file_obj.read()
+        otl_file_paths = file_contents.split()
+        return otl_file_paths
+
+
+def get_comparison_data_dir():
     """
     Gets the path to ~/extract-python-from-otl/test_data/comparison_data
-
     :return: str results_dir: ~/extract-python-from-otl/test_data/comparison_data
     """
-
-    results_dir = os.path.join(get_test_data_dir(), "comparison_data")
-    return results_dir
+    return os.path.join(get_test_data_dir(), "comparison_data")
 
 
 def is_valid_datetime(input_str):
@@ -203,8 +148,7 @@ def is_valid_datetime(input_str):
     """
     datetime_pattern = re.compile(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+$')
     match = datetime_pattern.match(input_str)
-    # TODO: Alternatively, use match is not None (generally preferred)
-    return bool(match)
+    return match is not None
 
 
 def assert_json_file(file_path):
@@ -217,10 +161,9 @@ def assert_json_file(file_path):
 
     dir_contents = os.listdir(file_path)
     for file_or_dir in dir_contents:
-        # TODO: You've used `os.path.join(file_path, file_or_dir)` multiple times.
-        #  You should assign it to a variable and reuse it in each situation
-        if os.path.isfile(os.path.join(file_path, file_or_dir)) and file_or_dir == "log.json":
-            with open(os.path.join(file_path, file_or_dir), "r") as file_obj:
+        file_or_dir_path = os.path.join(file_path, file_or_dir)
+        if os.path.isfile(file_or_dir_path) and file_or_dir == "log.json":
+            with open(file_or_dir_path, "r") as file_obj:
                 json_data = json.load(file_obj)
             for key in json_data.keys():
                 # log file on the otl folder directory
@@ -244,25 +187,26 @@ def assert_json_file(file_path):
 @pytest.mark.parametrize(
     'file_paths',
     [
-        pytest.param([get_test_otls_paths("sky_scraper.hda")[0]]),
+        pytest.param(get_test_otls_paths()),
         pytest.param([])
     ]
 )
 def test_del_folder_count(file_paths):
     """
     Tests and asserts the appropriate usage of shutil.rmtree()
-
     :param list file_paths: otl file path(s) (Tool function input)
     """
+
     with mock.patch("__builtin__.open", mock.mock_open(read_data="mocked_data")), \
             mock.patch("extract_python_from_otl.extract_py_from_hda"), \
             mock.patch("os.path.exists") as path_exists, mock.patch("os.mkdir"), \
-            mock.patch("json.load"), mock.patch("json.dumps"), \
+            mock.patch("json.load"), mock.patch("json.dump"), \
             mock.patch("shutil.rmtree") as del_folder:
 
         path_exists.return_value = True
 
         scripts_folder_path = "/tmp"
+        print(file_paths)
         epfo.extract_py_from_otl(file_paths, scripts_folder_path)
 
     if len(file_paths) == 0:
@@ -274,8 +218,8 @@ def test_del_folder_count(file_paths):
     [
         pytest.param("1"),
         pytest.param("a"),
-        pytest.param(str(get_test_otls_paths("sky_scraper")[0])),
-        pytest.param(str(hou.hda.definitionsInFile(get_test_otls_paths("sky_scraper.hda")[0])[0]))
+        pytest.param(str(get_sky_scraper_otl_path())),
+        pytest.param(str(hou.hda.definitionsInFile(get_sky_scraper_otl_path())[0]))
     ]
 )
 def test_get_hash(file_definition_str):
@@ -315,7 +259,7 @@ def test_extract_py_and_write(scripts_folder_name, file_name, expected_script):
     :param str expected_script: Expected script
     """
 
-    file_path = get_test_otls_paths("sky_scraper.hda")[0]
+    file_path = get_sky_scraper_otl_path()
     definition = hou.hda.definitionsInFile(file_path)[0]
     temp_folder_name = "otl_python_extraction_tool_test"
     temp_folder_path = cm.make_directory(temp_folder_name)
@@ -411,7 +355,7 @@ def test_extract_item_generation_scripts(parm_template, expected):
 @pytest.mark.parametrize(
     ('definition', 'file_names', 'expected_scripts'),
     [
-        pytest.param(hou.hda.definitionsInFile(get_test_otls_paths("sky_scraper.hda")[0])[0],
+        pytest.param(hou.hda.definitionsInFile(get_sky_scraper_otl_path())[0],
                      ['/OnCreated.py', '/OnUpdated.py', '/PythonModule.py'],
                      ['print("onCreated")', 'print("onUpdated")', 'print("Python script")'])
     ]
@@ -447,8 +391,8 @@ def test_extract_py_scripts(definition, file_names, expected_scripts):
 @pytest.mark.parametrize(
     "otl_file_paths",
     [
-        pytest.param(get_test_otls_paths("sky_scraper.hda")),
-        pytest.param(get_test_otls_paths("otl_list.txt")),
+        pytest.param([get_sky_scraper_otl_path()]),
+        pytest.param(get_test_otls_paths()),
         pytest.param([])
     ]
 )
@@ -505,14 +449,15 @@ def test_functionality(test_data):
 
         if test_data == "":
             file_paths = []
-        else:
-            file_paths = get_test_otls_paths(test_data)
+        elif test_data == "sky_scraper.hda":
+            file_paths = [get_sky_scraper_otl_path()]
+        elif test_data == "otl_list.txt":
+            file_paths = get_test_otls_paths()
 
         epfo.extract_python(file_paths, temp_folder_path, folder_name)
 
     # If input is a txt file, name the .json file "multiple_otls"
-    # TODO: Use str.endswith()
-    if ".txt" in test_data:
+    if test_data.endswith(".txt"):
         test_otl_data_name = "multiple_otls.json"
     # If it's a single otl, name it "sky_scraper_otl"
     elif "sky_scraper" in test_data:
@@ -522,7 +467,7 @@ def test_functionality(test_data):
     if test_data == "":
         expected_data = {'otl_scripts_folder': {'log.json': {}}}
     else:
-        test_json_file_path = os.path.join(get_file_path_to_test_json_files(), test_otl_data_name)
+        test_json_file_path = os.path.join(get_comparison_data_dir(), test_otl_data_name)
         with open(test_json_file_path, "r") as file_obj:
             expected_data = json.load(file_obj)
 
