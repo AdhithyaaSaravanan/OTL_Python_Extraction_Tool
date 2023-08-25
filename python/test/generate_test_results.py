@@ -10,9 +10,8 @@ import extract_python_from_otl as epfo
 
 
 def main():
-    # Generates test data for input "otl_list.txt"
+    # Generates test data for input "otl_list.txt" and "sky_scraper.hda"
     generate_test_data(tepfo.get_test_otls_paths(), "multiple_otls.json")
-    # Generates test data for input "sky_scraper.hda"
     generate_test_data(tepfo.get_sky_scraper_otl_path(), "sky_scraper_otl.json")
 
 

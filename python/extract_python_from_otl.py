@@ -218,13 +218,11 @@ def extract_py_from_hda(definitions, otl_folder_path):
         except hou.Error as exc:
             print("\n\nCouldn't access hou.hda methods nodeTypeCategory().name() and definition.nodeTypeName()\n\n")
 
-            # TODO: This isn't a particularly nice thing to do, as you're mixing error reports with your data
-            #   Why not pass a list, dict, or other object into the function that you can store error messages in?
             error_msg = {"hou Error": hou.Error.exceptionTypeName(exc),
                          "Error message": hou.Error.instanceMessage(exc)}
             error_dict = {str(definition): error_msg}
             print(json.dumps(error_dict, indent=4))
-            hda_node_type_and_context = "Invalid "
+            hda_node_type_and_context = ""
 
         hda_hash_dict[
             hda_unique_name] = hda_node_type_and_context
@@ -238,7 +236,7 @@ def make_unique_name(file_definition_string, name):
 
     :param str name: otl or hda name
     :param str file_definition_string: A file path of an otl or an hda.
-    :return: A hashed name of an otl or an hda.
+    :return: A hashed name for an otl or an hda or a python script name
              Example: name_9514410fbe6e4e5551660df8081b21ed
     """
 
@@ -254,6 +252,7 @@ def get_hash(file_definition_str):
 
     input for otl folder name hash = file path of otl
     input for hda folder name hash = str(definition of hda)
+    input for section name hash = section name
 
     :param str file_definition_str: A str(hda definition) of an otl file path
     :return: a hash key
@@ -424,27 +423,35 @@ def extract_py_scripts(definition, hda_folder_path):
         print(json.dumps(error_dict, indent=4))
         return result
 
+    sections_log_file = dict()
+
     # iterate through each section
     for section in definition_sections:
 
         # check if it's a python script
         if section + "/IsPython" in efo.keys() and efo[section + "/IsPython"]:
             py_script = definition_sections[section].contents()
-            file_name = definition_sections[section].name()
+            original_file_name = definition_sections[section].name()
+            file_name_hash = get_hash(original_file_name)
 
             # check and rectify the file name for any potential bad names
-            file_name = file_name.replace(os.path.sep, '_').replace('.', '_').replace(' ', '_')
+            file_name = original_file_name.replace(os.path.sep, '_').replace('.', '_').replace(' ', '_')
+            file_name_with_hash = file_name + "_" + file_name_hash
 
             # making a folder for the main python scripts
             if not os.path.exists(main_py_scripts_folder):
                 os.mkdir(main_py_scripts_folder)
 
-            script_file_path = os.path.join(main_py_scripts_folder, file_name + ".py")
-            # TODO: what happens if `script_file_path` is already in result?
-            #  Is that even possible? If it can potentially happen, it shouldn't just overwrite it, right?
-            #  (Feels like a good candidate to test in a unit test)
+            # update sections_log_file dict
+            sections_log_file[file_name_with_hash + ".py"] = original_file_name
+
+            script_file_path = os.path.join(main_py_scripts_folder, file_name_with_hash + ".py")
+
             assert script_file_path not in result
             result[script_file_path] = py_script
+
+    with open(os.path.join(main_py_scripts_folder, "log.json"), "w") as file_obj:
+        json.dump(sections_log_file, file_obj, indent=2)
 
     return result
 
