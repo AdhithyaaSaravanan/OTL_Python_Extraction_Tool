@@ -1,0 +1,71 @@
+{
+  "otl_scripts_folder": {
+    "otl_1_hda_d7ca41ee8b887364951238d0109b73f4": {
+      "log.json": {}, 
+      "test_otl_1_be55abd84e998477c54dbe50295e5dc0": {
+        "item_generation_scripts": {
+          "newparameter.py": {
+            "file_contents": "result = []\nfor i in xrange(13):\n    value = chr(2*i+65)+chr(2*i+66)\n    result.append(value)\n    result.append(value)\n\nreturn result"
+          }
+        }, 
+        "main_python_scripts": {
+          "OnLoaded.py": {
+            "file_contents": "# This will error if it gets run, so you might\n# need to trap against it\nprint 4/0"
+          }, 
+          "ACustomScript.py": {
+            "file_contents": "print \"hello world! changed 2!\"\n"
+          }, 
+          "onCreated.py": {
+            "file_contents": "print \"incorrectly named on-created event script\""
+          }
+        }, 
+        "parameter_callbacks": {
+          "press_me.py": {
+            "file_contents": "print list(xrange(10))"
+          }
+        }
+      }, 
+      "test_otl_1_99ad3ba71c47ddfdbc72096704b27bab": {
+        "main_python_scripts": {
+          "PythonModule.py": {
+            "file_contents": "# Should be extracted"
+          }
+        }
+      }, 
+      "test_otl_1::5_1e1865211014987e25a45e2b7135b880": {
+        "main_python_scripts": {
+          "PythonModule.py": {
+            "file_contents": "# Should be extracted\n\nfor i in range(3):\n    print i\n    "
+          }
+        }
+      }
+    }, 
+    "log.json": {}, 
+    "otl_2_hda_ee01fd00bbe9417181aee5cd585f8858": {
+      "test_otl_2_c2c85a1953f1b73a860ffd6849b82103": {
+        "main_python_scripts": {
+          "WhatDoWeDoAbout_Forward_Slash_Characters.py": {
+            "file_contents": "# How do you manage the filename?"
+          }, 
+          "WhatDoWeDoAbout_Spaces_In_The_Name.py": {
+            "file_contents": "# How do you manage the filename?"
+          }, 
+          "AScriptWithAnExtension_py.py": {
+            "file_contents": "# How do you manage the filename?"
+          }, 
+          "PythonModule.py": {
+            "file_contents": ""
+          }
+        }
+      }, 
+      "log.json": {}, 
+      "test_otl_1_ec4fa3118635199617b5011434640b6f": {
+        "main_python_scripts": {
+          "PythonModule.py": {
+            "file_contents": "# Should be extracted"
+          }
+        }
+      }
+    }
+  }
+}

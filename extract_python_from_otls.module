@@ -1,0 +1,7 @@
+#%Module
+
+set PACKAGE_DIR [file dirname [file normalize ${ModulesCurrentModulefile}]]
+setenv HOUDINI_LMINFO_VERBOSE 1
+
+prepend-path PATH ${PACKAGE_DIR}/bin
+prepend-path PYTHONPATH ${PACKAGE_DIR}/python
