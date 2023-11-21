@@ -5,8 +5,13 @@
 The tool processes a list .hda(houdini digital assets) files or otls (operator type libraries), 
 and extracts the python scripts within them into a simple folder tree on disk.
 
-<p1 style="color:#Bbaaae;">The tool was writen as part of the framestore launchpad internship. The instructions 
-are exclusive to the company and are not in accordance to the general public.</p1>
+
+## Note:
+
+This tool was writen as part of the 2023 framestore launchpad internship. The instructions 
+are exclusive to the company and are not in accordance to the general public.
+
+Some of the tests have been broken since the last change, I will update them in the future.
 
 ## Steps to use:
 ### Running the tool:
